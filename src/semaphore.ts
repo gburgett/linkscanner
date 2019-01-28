@@ -7,9 +7,12 @@ interface SemaphoreConfig {
 interface Task<T> {
   resolve: (value?: T | PromiseLike<T>) => void
   reject: (reason?: any) => void
-  action: () => Promise<T>
+  action: Action<T>
   state: 'queued' | 'running' | 'released'
 }
+
+export type Action<T> = (() => Promise<T>) | ((cb: TaskCB<T>) => void)
+export type TaskCB<T> = (err: Error | null, result: T) => void
 
 export class Semaphore extends EventEmitter {
   public config: Readonly<SemaphoreConfig>
@@ -22,7 +25,7 @@ export class Semaphore extends EventEmitter {
     super()
 
     this.config = Object.assign({
-      maxInflight: 4,
+      maxInflight: 1,
     }, config)
   }
 
@@ -37,7 +40,7 @@ export class Semaphore extends EventEmitter {
     return this.inflight <= 0 && this.queue.length == 0
   }
 
-  public lock<T>(action: () => Promise<T>): Promise<T> {
+  public lock<T>(action: Action<T>): Promise<T> {
     let task: Task<T> | null = null
     const promise = new Promise<T>((resolve, reject) => {
       task = {
@@ -75,11 +78,26 @@ export class Semaphore extends EventEmitter {
     }
   }
 
-  private async _runTask(task: Task<any>) {
+  private async _runTask<T>(task: Task<T>) {
     try {
       task.state = 'running'
-      const result = await task.action()
-      task.resolve(result)
+
+      let taskPromise: Promise<T> | void | undefined
+      const cbPromise = new Promise<T>((resolve, reject) => {
+        taskPromise = task.action((err, result) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(result)
+          }
+        })
+      })
+
+      const promise = taskPromise && typeof taskPromise == 'object' && 'then' in taskPromise ?
+        taskPromise :
+        cbPromise
+
+      task.resolve(await promise)
     } catch (e) {
       task.reject(e)
     } finally {
