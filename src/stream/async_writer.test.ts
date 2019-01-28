@@ -30,15 +30,34 @@ test('rejects the promise if write sends an error', async (t) => {
     },
   })
 
-  let caught: any
-  try {
-    await stream.writeAsync('1')
-  } catch (e) {
-    // expected
-    caught = e
-  }
+  let streamErr: Error | null = null
+  stream.on('error', (e) => streamErr = e)
 
-  t.truthy(caught)
+  const err = await t.throwsAsync(() => stream.writeAsync('1'))
+  t.true(err.message == 'test err')
+  t.true(err == streamErr)
+})
+
+test('still writable after an error', async (t) => {
+  const stream = new Writable({
+    write: (chunk, encoding, cb) => {
+      if (chunk == '1') {
+        setTimeout(() => cb(new Error('test err')), 1)
+      } else {
+        setTimeout(() => cb(), 1)
+      }
+      return true
+    },
+  })
+
+  let streamErr: Error | null = null
+  stream.on('error', (e) => streamErr = e)
+
+  const err = await t.throwsAsync(() => stream.writeAsync('1'))
+  t.true(err.message == 'test err')
+  t.true(err == streamErr)
+
+  await t.notThrowsAsync(() => stream.writeAsync('2'))
 })
 
 test('waits for the drain event if draining', async (t) => {
@@ -86,19 +105,19 @@ test('recursively writes the chunk after drain event', async (t) => {
   p3.then(() => p3done = true, (err) => p3err = err)
 
   // finish write '1'
-  callbacks.shift()()
+  callbacks.shift()!()
   await p1
   t.deepEqual(chunks.map((c) => c.toString()), ['1', '2'])
 
   // finish write '2'
-  callbacks.shift()()
+  callbacks.shift()!()
   await p2
 
   t.false(p3done)
   t.falsy(p3err)
 
   // finish write '3'
-  callbacks.shift()()
+  callbacks.shift()!()
   await p3
 
   t.deepEqual(chunks.map((c) => c.toString()), ['1', '2', '3'])

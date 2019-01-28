@@ -17,9 +17,7 @@ function writeAsync(this: Writable & InternalAsyncState, chunk: any, encoding?: 
 
   return new Promise<void>((resolve, reject) => {
     if (this._asyncWrtiableState!.draining) {
-      console.log('write', chunk)
       this._asyncWrtiableState!.draining = this.write(chunk, encoding, (err: any) => {
-        console.log('write complete', chunk, err)
         if (err) {
           reject(err)
         } else {
@@ -29,11 +27,9 @@ function writeAsync(this: Writable & InternalAsyncState, chunk: any, encoding?: 
     } else {
       if (!this._asyncWrtiableState!.drainPromise) {
         this._asyncWrtiableState!.drainPromise = new Promise<void>((dpResolve) => {
-          console.log('waiting on drain', chunk)
           this.once('drain', () => {
             this._asyncWrtiableState!.drainPromise = null
             this._asyncWrtiableState!.draining = true
-            console.log('drain', chunk, this)
             dpResolve()
           })
         })
