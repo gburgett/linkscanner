@@ -1,4 +1,6 @@
 
-export function sum(a: number, b: number) {
-  return a + b
+import * as stream from './stream'
+
+export = {
+  stream,
 }
