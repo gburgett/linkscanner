@@ -2,7 +2,7 @@ import { Request, RequestAPI, RequestCallback, Response } from 'request'
 import * as requestLib from 'request'
 
 interface AsyncRequestAPI<TReq extends Request, TOptions, TRequiredUriUrl> {
-  get: (url: string) => Promise<Response>
+  get: (url: string, options?: TOptions) => Promise<Response>
   post: (url: string, options: TOptions) => Promise<Response>
 }
 
@@ -22,7 +22,7 @@ export function AsyncRequest<TReq extends Request, TOptions, TRequiredUriUrl>(
     return request(uri, options)
   }
   return Object.assign(extendedLib, {
-    get: (url: string) => p((c) => request.get(url, c)),
+    get: (url: string, options?: TOptions) => p((c) => request.get(url, options, c)),
     post: (url: string, options: TOptions) => p((c) => request.post(url, options, c)),
   })
 
