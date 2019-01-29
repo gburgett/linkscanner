@@ -26,9 +26,7 @@ export interface ParallelWritableOptions {
 }
 
 /**
- * An extension of a Transform stream which can process chunks in parallel.
- * Ordering is not preserved, because the individual transformations may complete
- * in any order.
+ * An extension of a Writable stream which can process chunks in parallel.
  *
  * Implementers should not implement `_write`, but rather `_writeAsync`.
  */

@@ -2,6 +2,8 @@
 import * as list from './list'
 import * as stream from './stream'
 
+export * from './semaphore'
+
 export const Stream = stream
 export const List = list
 
