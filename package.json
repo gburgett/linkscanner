@@ -38,7 +38,11 @@
   },
   "ava": {
     "files": [
-      "src/**/*.test.ts"
+      "src/**/*.test.ts",
+      "events.js",
+      "list.js",
+      "request.js",
+      "stream.js"
     ],
     "cache": true,
     "failFast": true,
