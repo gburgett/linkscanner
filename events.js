@@ -1,1 +1,1 @@
-export * from './dist/events'
+module.exports = require('./dist/events')

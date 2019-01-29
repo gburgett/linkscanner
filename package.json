@@ -4,7 +4,15 @@
   "description": "A toolbox of utilities to help with async (promise-based) transformations",
   "main": "dist/index",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "./events.js",
+    "./events.d.ts",
+    "./list.js",
+    "./list.d.ts",
+    "./request.js",
+    "./request.d.ts",
+    "./stream.js",
+    "./stream.d.ts"
   ],
   "repository": "https://github.com/gburgett/async-toolbox",
   "scripts": {
@@ -38,11 +46,7 @@
   },
   "ava": {
     "files": [
-      "src/**/*.test.ts",
-      "events.js",
-      "list.js",
-      "request.js",
-      "stream.js"
+      "src/**/*.test.ts"
     ],
     "cache": true,
     "failFast": true,

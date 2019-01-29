@@ -1,1 +1,1 @@
-export * from './dist/stream'
+module.exports = require('./dist/stream')
