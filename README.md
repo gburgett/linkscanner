@@ -1,5 +1,9 @@
 # Async Toolbox
 
+[![npm version](https://badge.fury.io/js/async-toolbox.svg)](https://badge.fury.io/js/async-toolbox)
+[![Build Status](https://travis-ci.org/gburgett/async-toolbox.svg?branch=master)](https://travis-ci.org/gburgett/async-toolbox)
+[![Coverage Status](https://coveralls.io/repos/github/gburgett/async-toolbox/badge.svg?branch=master)](https://coveralls.io/github/gburgett/async-toolbox?branch=master)
+
 This package contains a number of utilities that have been useful for me in developing
 with async code in nodejs and the browser.  It contains a number of tools which
 you can require as you desire.
