@@ -36,14 +36,21 @@ export function toReadable(entries: any[]): Readable {
  * @param stream The readable stream to drain into an array
  * @returns a promise which completes when the stream is fully read.
  */
-export function collect(stream: Readable): Promise<any[]> {
+export function collect(stream: Readable): Promise<any[]>
+export function collect(stream: Readable, cb: (chunk: any) => void): Promise<void>
+
+export function collect(stream: Readable, cb?: (chunk: any) => void): Promise<any[]> | Promise<void> {
   const result: any = []
 
-  return new Promise((resolve, reject) => {
+  return new Promise<any>((resolve, reject) => {
     stream.pipe(new Writable({
       objectMode: true,
       write: (chunk, encoding, callback) => {
-        result.push(chunk)
+        if (cb) {
+          cb(chunk)
+        } else {
+          result.push(chunk)
+        }
         callback()
       },
     }))
@@ -51,7 +58,7 @@ export function collect(stream: Readable): Promise<any[]> {
         reject(err)
       })
       .on('finish', () => {
-        resolve(result)
+        resolve(cb ? undefined : result)
       })
 
     stream.on('error', (err) => reject(err))
