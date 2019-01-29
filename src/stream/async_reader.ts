@@ -51,10 +51,24 @@ function readAsync(this: Readable & InternalAsyncState, size?: number): Promise<
 
 declare module 'stream' {
   interface Readable {
+    /**
+     * Reads a chunk from the current write stream, returning a promise that completes
+     * when the chunk has actually been read.
+     *
+     * This function respects the 'readable' event of the stream.  If the stream is currently
+     * waiting for data, the function will queue the read until the readable event is fired.
+     */
     readAsync(size?: number): Promise<any>
   }
 
   interface Duplex {
+    /**
+     * Reads a chunk from the current write stream, returning a promise that completes
+     * when the chunk has actually been read.
+     *
+     * This function respects the 'readable' event of the stream.  If the stream is currently
+     * waiting for data, the function will queue the read until the readable event is fired.
+     */
     readAsync(size?: number): Promise<any>
   }
 }

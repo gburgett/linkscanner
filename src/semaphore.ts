@@ -14,6 +14,10 @@ interface Task<T> {
 export type Action<T> = (() => Promise<T>) | ((cb: TaskCB<T>) => void)
 export type TaskCB<T> = (err: Error | null, result: T) => void
 
+/**
+ * A Semaphore which queues up tasks to be executed once prior tasks are complete.
+ * Number of concurrent inflight tasks is configurable at initialization.
+ */
 export class Semaphore extends EventEmitter {
   public config: Readonly<SemaphoreConfig>
 
@@ -29,6 +33,10 @@ export class Semaphore extends EventEmitter {
     }, config)
   }
 
+  /**
+   * Gets a snapshot of the current state of the semaphore.
+   * @returns the current number of inflight requests, and the current queue size.
+   */
   public stats(): Readonly<{ inflight: number, queueSize: number }> {
     return {
       inflight: this.inflight,
@@ -36,10 +44,27 @@ export class Semaphore extends EventEmitter {
     }
   }
 
+  /**
+   * Checks if the semaphore is currently empty.  You can poll this or wait for
+   * the 'empty' event to be raised.
+   */
   public isEmpty(): boolean {
     return this.inflight <= 0 && this.queue.length == 0
   }
 
+  /**
+   * Locks the semaphore, running or enqueuing the given task.  The semaphore is
+   * not unlocked until the task completes.  The task should perform the minimum
+   * required work and then return a value.  For example, connecting to a remote
+   * API and returning the response body for further processing.
+   *
+   * The task can either be an async function returning a promise, or a function
+   * that accepts a callback as the first parameter.
+   *
+   * @param action An action to be run when the number of inflight tasks is below the limit.
+   * @returns A promise that completes when the action completes, returning the result
+   *  of the action.
+   */
   public lock<T>(action: Action<T>): Promise<T> {
     let task: Task<T> | null = null
     const promise = new Promise<T>((resolve, reject) => {
