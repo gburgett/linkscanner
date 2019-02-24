@@ -15,6 +15,9 @@
     "sourceMap": true,
     "lib": [
       "es2015"
+    ],
+    "typeRoots": [
+      "./@types"
     ]
   },
   "include": [
