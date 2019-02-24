@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "lint": "tslint 'src/**/*.ts'",
-    "test": "tsc --project tsconfig.test.json && nyc ava 'src/**/*.test.js'",
-    "test-watch": "ava --watch",
-    "coverage": "npm run test && nyc report --reporter=html && open coverage/index.html",
+    "test-cover": "tsc --project tsconfig.test.json && mocha 'src/**/*.test.ts'",
+    "test-node": "mocha --require ts-node/register src/*.test.ts src/**/*.test.ts",
+    "test-watch": "nodemon --watch src/ -e ts --exec 'npm run test-node || echo \"failed\"'",
+    "coverage": "npm run test-cover && nyc report --reporter=html && open coverage/index.html",
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "build": "tsc",
     "prepare": "npm run build",
@@ -21,27 +22,17 @@
   "author": "Gordon Burgett (gordon@gordonburgett.net)",
   "license": "MIT",
   "devDependencies": {
-    "ava": "^1.2.0",
-    "coveralls": "^3.0.2",
-    "nyc": "^13.1.0",
+    "@types/chai": "^4.1.7",
+    "@types/chai-jquery": "^1.1.38",
+    "@types/mocha": "^5.2.6",
+    "chai": "^4.2.0",
+    "chai-jquery": "^2.1.0",
+    "coveralls": "^3.0.3",
+    "mocha": "^6.0.1",
+    "nyc": "^13.3.0",
     "ts-node": "^8.0.2",
     "tslint": "^5.12.1",
     "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.2.4"
-  },
-  "ava": {
-    "files": [
-      "src/**/*.test.ts"
-    ],
-    "cache": true,
-    "failFast": true,
-    "verbose": true,
-    "compileEnhancements": false,
-    "extensions": [
-      "ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ]
   }
 }

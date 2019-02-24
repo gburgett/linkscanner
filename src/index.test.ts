@@ -1,7 +1,10 @@
-import test from 'ava'
+import { expect } from 'chai'
+import {} from 'mocha'
 
 import { sum } from './index'
 
-test('1 + 1 = 2', (t) => {
-  t.true(sum(1, 1) == 2)
+describe('sum', () => {
+  it('1 + 1 = 2', () => {
+    expect(sum(1, 1)).to.eq(2)
+  })
 })
