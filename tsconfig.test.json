@@ -1,7 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "src"
+    "outDir": "src",
+    "target": "es3",
+    "declaration": true,
+    "lib": [
+      "es2015"
+    ]
   },
   "exclude": []
 }

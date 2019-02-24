@@ -1,5 +1,6 @@
 node_modules
 dist
+tmp
 
 src/**/*.js
 src/**/*.map

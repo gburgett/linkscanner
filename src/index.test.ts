@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import {} from 'mocha'
 
-import { sum } from './index'
+import sum from './index'
 
 describe('sum', () => {
   it('1 + 1 = 2', () => {
