@@ -1,5 +1,6 @@
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
-import fetch from 'node-fetch'
+require('es6-promise/auto')
+import fetch from 'universal-fetch'
 import { EOF, isEOF } from './reentry'
 import { URL } from './url'
 
