@@ -29,7 +29,7 @@ async function Run(args: Args): Promise<void> {
       hashChunk: (url: string | EOF) => {
         if (isEOF(url)) {
           // send the EOF to all streams
-          return [...hostnames.hostnames]
+          return DivergentStreamWrapper.ALL
         }
         return parseUrl(url).hostname
       },
@@ -70,6 +70,9 @@ class HostnameSet {
       return existing
     }
 
-    return new Fetch({ hostnames: this.hostnames })
+    return new Fetch({
+      hostnames: this.hostnames,
+      semaphore: this.lockFor(hostname),
+    })
   }
 }

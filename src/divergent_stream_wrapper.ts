@@ -2,7 +2,7 @@ import { Semaphore } from 'async-toolbox'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 import { Duplex } from 'stream'
 
-type HashChunk = (chunk: any) => string | string[]
+type HashChunk = (chunk: any) => string | string[] | ALL
 type CreateStream = (hash: string) => Duplex
 
 type CreateStreamOptions = ParallelTransformOptions & {
@@ -18,6 +18,8 @@ type DivergentStreamWrapperOptions =
   }
 
 export class DivergentStreamWrapper extends ParallelTransform {
+  public static readonly ALL = Symbol('All Hosts')
+
   private readonly _hashChunk: HashChunk
   private readonly _streams: Map<string, Duplex>
   private readonly _createStreamOptions: CreateStreamOptions
@@ -61,7 +63,9 @@ export class DivergentStreamWrapper extends ParallelTransform {
 
   private _streamsFor(chunk: any): Duplex[] {
     let hashes = this._hashChunk(chunk)
-    if (!Array.isArray(hashes)) {
+    if (isALL(hashes)) {
+      hashes = [...this._streams.keys()]
+    } else if (!Array.isArray(hashes)) {
       hashes = [hashes]
     }
     return hashes.map((hash) => {
@@ -88,4 +92,10 @@ export class DivergentStreamWrapper extends ParallelTransform {
       semaphore: this._createStreamOptions.semaphore ? this._createStreamOptions.semaphore(hash) : undefined,
     })
   }
+}
+
+export type ALL = typeof DivergentStreamWrapper.ALL
+
+export function isALL(chunk: any): chunk is ALL {
+  return chunk == DivergentStreamWrapper.ALL
 }
