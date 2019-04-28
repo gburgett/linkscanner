@@ -1,19 +1,22 @@
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 require('es6-promise/auto')
 import { ReadLock } from 'async-toolbox'
-import { Response } from 'node-fetch'
-import { Writable } from 'stream'
-import fetch from 'universal-fetch'
+import {Response} from 'cross-fetch'
+import 'cross-fetch/polyfill'
 import { Result } from './model'
 import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
 import { URL } from './url'
 
+declare var fetch: any
+
+export interface Parser {
+  parse(response: Response, push: (result: URL) => void): Promise<Result>
+}
+
 interface Parsers {
-  [mimeType: string]: {
-    parse: (response: Response, push: (result: URL) => void) => Promise<Result>,
-  }
+  [mimeType: string]: Parser
 }
 
 export interface FetchOptions extends ParallelTransformOptions {
@@ -23,11 +26,10 @@ export interface FetchOptions extends ParallelTransformOptions {
 
   acceptMimeTypes?: string[]
 
-  reentry?: Writable
   parsers?: Parsers
 }
 
-export class Fetch extends ParallelTransform {
+export class Fetcher extends ParallelTransform {
   private _acceptMimeType: string
   private _parsers: Parsers
 
@@ -67,19 +69,13 @@ export class Fetch extends ParallelTransform {
       redirect: 'follow',
     })
 
-    const chunk = {
-      url,
-      method,
-      response,
-    }
-
-    const contentType = chunk.response.headers.get('content-type')
+    const contentType = response.headers.get('content-type')
     const parser = this._parsers[contentType || 'default'] ||
       this._parsers.default ||
       new RegexpParser()
 
-    const result = await parser.parse(chunk.response, (u) => {
-      console.log('TODO: reentry on URL', u)
+    const result = await parser.parse(response, (u) => {
+      this.emit('url', u)
     })
 
     this.push(result)

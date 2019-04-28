@@ -3,7 +3,7 @@ import { collect } from 'async-toolbox/stream'
 
 import { Duplex } from 'stream'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
-import { Fetch } from './fetch'
+import { Fetcher } from './fetcher'
 import { Result } from './model'
 import { EOF, isEOF, Reentry } from './reentry'
 import { loadSource } from './source'
@@ -70,7 +70,7 @@ class HostnameSet {
       return existing
     }
 
-    return new Fetch({
+    return new Fetcher({
       hostnames: this.hostnames,
       semaphore: this.lockFor(hostname),
     })

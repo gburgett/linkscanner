@@ -1,4 +1,4 @@
-import { Response } from 'node-fetch'
+import { Response } from 'cross-fetch'
 import { Result } from '../model'
 import { URL } from '../url'
 
