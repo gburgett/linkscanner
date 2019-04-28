@@ -9,10 +9,8 @@ import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
 import { URL } from './url'
 
-declare var fetch: any
-
 export interface Parser {
-  parse(response: Response, push: (result: URL) => void): Promise<Result>
+  parse(response: Response, request: Request, push: (result: URL) => void): Promise<Result>
 }
 
 interface Parsers {
@@ -61,20 +59,21 @@ export class Fetcher extends ParallelTransform {
       'GET' :
       'HEAD'
 
-    const response = await fetch(url.toString(), {
+    const request = new Request(url.toString(), {
       method,
       headers: {
         Accept: this._acceptMimeType,
       },
       redirect: 'follow',
     })
+    const response = await fetch(request)
 
     const contentType = response.headers.get('content-type')
     const parser = this._parsers[contentType || 'default'] ||
       this._parsers.default ||
       new RegexpParser()
 
-    const result = await parser.parse(response, (u) => {
+    const result = await parser.parse(response, request, (u) => {
       this.emit('url', u)
     })
 

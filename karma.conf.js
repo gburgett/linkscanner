@@ -14,6 +14,8 @@ module.exports = function(config) {
       "karma-webpack"
     ],
     files: [
+      "node_modules/cross-fetch/dist/cross-fetch.js",
+      "node_modules/fetch-mock/dist/es5/client-bundle.js",
       "src/**/*.test.ts"
     ],
     exclude: [],

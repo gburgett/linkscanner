@@ -50,8 +50,9 @@ describe('Fetch', () => {
 })
 
 const success: Parser = {
-  parse: async (resp: Response) => {
-    const url = parseUrl(resp.url)
+  parse: async (resp: Response, req: Request) => {
+    const rawUrl = resp.url && resp.url.length > 0 ? resp.url : req.url
+    const url = parseUrl(rawUrl)
     return {
       url,
       host: url.hostname,
