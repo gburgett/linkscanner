@@ -21,13 +21,13 @@ describe('Fetch', () => {
     const uut = instance(success)
 
     // act
-    await uut.writeAsync(parseUrl('https://google.com'))
+    await uut.writeAsync(parseUrl('https://jsonplaceholder.typicode.com'))
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
     expect(result[0].status).to.eq(200)
-    expect(result[0].host).to.eq('www.google.com')
-    expect(result[0].url.toString()).to.eq('https://www.google.com/')
+    expect(result[0].host).to.eq('jsonplaceholder.typicode.com')
+    expect(result[0].url.toString()).to.eq('https://jsonplaceholder.typicode.com/')
   })
 
   it('performs a HEAD request when the host does not match', async () => {
@@ -61,3 +61,15 @@ const success: Parser = {
     }
   },
 }
+
+Object.defineProperty(Response, 'url', {
+  get() {
+    if (this._url) {
+      return this._url
+    }
+    return super.get()
+  },
+  set(value) {
+    this._url = value
+  },
+})
