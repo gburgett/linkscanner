@@ -7,10 +7,10 @@ import { Result } from './model'
 import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
-import { URL } from './url'
+import { parseUrl, URL } from './url'
 
 export interface Parser {
-  parse(response: Response, request: Request, push: (result: URL) => void): Promise<Result>
+  parse(response: Response, request: Request, push: (result: URL) => void): Promise<void>
 }
 
 interface Parsers {
@@ -26,6 +26,13 @@ export interface FetchOptions extends ParallelTransformOptions {
 
   parsers?: Parsers
 }
+
+const isomorphicPerformance = typeof(performance) != 'undefined' ?
+  performance :
+  // we only get here in nodejs.  Use eval to confuse webpack so it doesn't import
+  // the perf_hooks package.
+  // tslint:disable-next-line:no-eval
+  eval('require')('perf_hooks').performance
 
 export class Fetcher extends ParallelTransform {
   private _acceptMimeType: string
@@ -66,6 +73,8 @@ export class Fetcher extends ParallelTransform {
       },
       redirect: 'follow',
     })
+
+    const start = isomorphicPerformance.now()
     const response = await fetch(request)
 
     const contentType = response.headers.get('content-type')
@@ -73,10 +82,28 @@ export class Fetcher extends ParallelTransform {
       this._parsers.default ||
       new RegexpParser()
 
-    const result = await parser.parse(response, request, (u) => {
+    const partialResult = createResult(request, response)
+
+    await parser.parse(response, request, (u) => {
       this.emit('url', u)
     })
+    const end = isomorphicPerformance.now()
 
-    this.push(result)
+    const fullResult: Result = {
+      ...partialResult,
+      ms: end - start,
+    }
+
+    this.push(fullResult)
+  }
+}
+
+function createResult(req: Request, resp: Response) {
+  const rawUrl = resp.url && resp.url.length > 0 ? resp.url : req.url
+  const url = parseUrl(rawUrl)
+  return {
+    url,
+    host: url.hostname,
+    status: resp.status,
   }
 }

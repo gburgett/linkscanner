@@ -9,16 +9,13 @@ import { Result } from './model'
 import { parseUrl } from './url'
 
 describe('Fetch', () => {
-  const instance = (parser: Parser) =>
+  const instance = () =>
     new Fetcher({
       hostnames: new Set(['test.com']),
-      parsers: {
-        default: parser,
-      },
     })
 
   it('gets a result from a page', async () => {
-    const uut = instance(success)
+    const uut = instance()
 
     // act
     await uut.writeAsync(parseUrl('https://jsonplaceholder.typicode.com'))
@@ -31,7 +28,7 @@ describe('Fetch', () => {
   })
 
   it('performs a HEAD request when the host does not match', async () => {
-    const uut = instance(success)
+    const uut = instance()
 
     fetchMock.headOnce('http://other.com', 200)
 
@@ -47,29 +44,4 @@ describe('Fetch', () => {
     const call = fetchMock.lastCall(/other\.com/)!
     expect(call[1]!.method).to.eq('HEAD')
   })
-})
-
-const success: Parser = {
-  parse: async (resp: Response, req: Request) => {
-    const rawUrl = resp.url && resp.url.length > 0 ? resp.url : req.url
-    const url = parseUrl(rawUrl)
-    return {
-      url,
-      host: url.hostname,
-      ms: 1,
-      status: resp.status,
-    }
-  },
-}
-
-Object.defineProperty(Response, 'url', {
-  get() {
-    if (this._url) {
-      return this._url
-    }
-    return super.get()
-  },
-  set(value) {
-    this._url = value
-  },
 })
