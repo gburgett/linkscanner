@@ -1,24 +1,23 @@
 import { Semaphore } from 'async-toolbox'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
-import { EventEmitter } from 'events'
 import { Duplex } from 'stream'
 
 type HashChunk = (chunk: any) => string | string[] | ALL
-type CreateStream = (hash: string) => Duplex
+type CreateStream<T extends Duplex> = (hash: string) => T
 
 type CreateStreamOptions = ParallelTransformOptions & {
   semaphore?: (hash: string) => Semaphore,
 }
 
-type DivergentStreamWrapperOptions =
+type DivergentStreamWrapperOptions<T extends Duplex> =
   ParallelTransformOptions &
   CreateStreamOptions &
   {
     hashChunk: HashChunk,
-    createStream?: CreateStream,
+    createStream?: CreateStream<T>,
   }
 
-export class DivergentStreamWrapper extends ParallelTransform {
+export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelTransform {
   public static readonly ALL = Symbol('All Hosts')
 
   public on = this.addListener
@@ -32,7 +31,7 @@ export class DivergentStreamWrapper extends ParallelTransform {
   private readonly _createStreamOptions: CreateStreamOptions
   private readonly _eventNames = new Set<string | symbol>()
 
-  constructor(options: DivergentStreamWrapperOptions) {
+  constructor(options: DivergentStreamWrapperOptions<T>) {
     super({
       objectMode: true,
       // only one _transformAsync at a time, i.e. we block upstream if any of our

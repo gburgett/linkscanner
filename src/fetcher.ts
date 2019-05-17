@@ -85,7 +85,10 @@ export class Fetcher extends ParallelTransform {
     const partialResult = createResult(request, response)
 
     await parser.parse(response, request, (u) => {
-      this.emit('url', u)
+      this.emit('url', {
+        url: u,
+        parent: url,
+      })
     })
     const end = isomorphicPerformance.now()
 
