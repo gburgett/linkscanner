@@ -1,6 +1,6 @@
 import { Request, Response } from 'cross-fetch'
-import { URL } from 'whatwg-url'
 import { Result } from '../model'
+import { URL } from '../url'
 import { parseUrl } from '../url'
 
 export class RegexpParser {

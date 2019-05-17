@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { Response } from 'cross-fetch'
-import fetchMock from 'fetch-mock'
 import {} from 'mocha'
+import { URL } from '../url'
 
 import { RegexpParser } from './regexp-parser'
 
