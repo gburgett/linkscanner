@@ -3,6 +3,7 @@ require('es6-promise/auto')
 import { ReadLock } from 'async-toolbox'
 import {Response} from 'cross-fetch'
 import 'cross-fetch/polyfill'
+import { defaultLogger, Logger } from './logger'
 import { Result } from './model'
 import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
@@ -26,6 +27,7 @@ export interface FetchOptions extends ParallelTransformOptions {
   followRedirects?: boolean
 
   parsers?: Parsers
+  logger?: Logger
 }
 
 const isomorphicPerformance = typeof(performance) != 'undefined' ?
@@ -40,11 +42,15 @@ export class Fetcher extends ParallelTransform {
   private _parsers: Parsers
 
   constructor(private readonly options: FetchOptions) {
-    super(Object.assign({},
-      options,
+    super(Object.assign(
       {
-      objectMode: true,
-    }))
+        logger: defaultLogger,
+      },
+        options,
+      {
+        objectMode: true,
+      },
+    ))
 
     this._acceptMimeType = options.acceptMimeTypes ?
       options.acceptMimeTypes.join(', ') :
@@ -66,7 +72,11 @@ export class Fetcher extends ParallelTransform {
     await this._fetch(url)
   }
 
-  private async _fetch(url: URL, followRedirects = this.options.followRedirects): Promise<void> {
+  private async _fetch(url: URL): Promise<void> {
+    const { followRedirects, logger } = {
+      logger: defaultLogger,
+      ...this.options,
+    }
     const method = this.options.hostnames.has(url.hostname) ?
       'GET' :
       'HEAD'
@@ -79,6 +89,7 @@ export class Fetcher extends ParallelTransform {
       redirect: 'manual',
     })
 
+    logger.debug(`${request.method} ${request.url}`)
     const start = isomorphicPerformance.now()
     const response = await fetch(request)
 
@@ -88,6 +99,7 @@ export class Fetcher extends ParallelTransform {
       new RegexpParser()
 
     const partialResult = createResult(request, response)
+    logger.debug(`${request.method} ${request.url} ${response.status}`)
 
     if (partialResult.status >= 200 && partialResult.status < 300) {
       await parser.parse(response, request, (u) => {
@@ -113,7 +125,7 @@ export class Fetcher extends ParallelTransform {
         try {
           parsedLocation = parseUrl(location)
         } catch (ex) {
-          console.error(`Error parsing redirect location from ${url.toString()} - ${location}`)
+          logger.error(`Error parsing redirect location from ${url.toString()} - ${location}`)
           return
         }
 
