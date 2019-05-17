@@ -23,6 +23,7 @@ export interface FetchOptions extends ParallelTransformOptions {
   hostnames: Set<string>
 
   acceptMimeTypes?: string[]
+  followRedirects?: boolean
 
   parsers?: Parsers
 }
@@ -62,6 +63,10 @@ export class Fetcher extends ParallelTransform {
       return
     }
 
+    await this._fetch(url)
+  }
+
+  private async _fetch(url: URL, followRedirects = this.options.followRedirects): Promise<void> {
     const method = this.options.hostnames.has(url.hostname) ?
       'GET' :
       'HEAD'
@@ -84,20 +89,37 @@ export class Fetcher extends ParallelTransform {
 
     const partialResult = createResult(request, response)
 
-    await parser.parse(response, request, (u) => {
-      this.emit('url', {
-        url: u,
-        parent: url,
+    if (partialResult.status >= 200 && partialResult.status < 300) {
+      await parser.parse(response, request, (u) => {
+        this.emit('url', {
+          url: u,
+          parent: url,
+        })
       })
-    })
+    }
     const end = isomorphicPerformance.now()
 
-    const fullResult: Result = {
+    const fullResult = {
       ...partialResult,
       ms: end - start,
     }
-
     this.push(fullResult)
+
+    if (followRedirects && [301, 302].includes(response.status)) {
+      // single redirect
+      const location = response.headers.get('Location')
+      if (location) {
+        let parsedLocation
+        try {
+          parsedLocation = parseUrl(location)
+        } catch (ex) {
+          console.error(`Error parsing redirect location from ${url.toString()} - ${location}`)
+          return
+        }
+
+        await this._fetch(parsedLocation)
+      }
+    }
   }
 }
 

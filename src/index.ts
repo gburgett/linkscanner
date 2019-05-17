@@ -12,6 +12,7 @@ import { parseUrl, parseUrls, URL } from './url'
 export interface Args {
   source: string | string[],
   hostnames?: string | string[]
+  followRedirects?: boolean
 }
 
 async function Run(args: Args): Promise<void> {
@@ -22,7 +23,10 @@ async function Run(args: Args): Promise<void> {
   const source = loadSource(args)
     .pipe(parseUrls())
 
-  const results = BuildStream(source, { hostnames })
+  const results = BuildStream(source, {
+    hostnames,
+    followRedirects: args.followRedirects,
+  })
 
   await collect(results, (result: Result) => {
     console.log(`${result.status}: ${result.method} ${result.url.toString()}`)
@@ -31,6 +35,7 @@ async function Run(args: Args): Promise<void> {
 
 interface BuildStreamOptions {
   hostnames: Set<string>
+  followRedirects: boolean
 }
 
 /**
@@ -40,11 +45,19 @@ interface BuildStreamOptions {
  */
 export function BuildStream(
   source: Readable<URL>,
-  {
-    hostnames,
-  }: Partial<BuildStreamOptions> = {},
+  args?: Partial<BuildStreamOptions>,
 ): Readable<Result> {
-  const hostnameSet = new HostnameSet(hostnames || new Set<string>())
+  const {
+    hostnames,
+    followRedirects,
+  } = Object.assign({
+  }, args)
+  const hostnameSet = new HostnameSet(
+    hostnames || new Set<string>(),
+    {
+      followRedirects,
+    },
+  )
   const reentry = new Reentry()
 
   const results = source
@@ -95,7 +108,8 @@ class HostnameSet {
     return this._hostnames
   }
 
-  constructor(private readonly _hostnames: Set<string>) {}
+  constructor(private readonly _hostnames: Set<string>,
+              private readonly _options?: { followRedirects?: boolean }) {}
 
   public lockFor(hostname: string) {
     const existing = this._locks.get(hostname)
@@ -117,6 +131,7 @@ class HostnameSet {
     return new Fetcher({
       hostnames: this.hostnames,
       semaphore: this.lockFor(hostname),
+      followRedirects: this._options && this._options.followRedirects,
     })
   }
 }

@@ -1,7 +1,10 @@
 import yargs from 'yargs'
 import Run from '.'
 
-const argv = yargs.argv
+const argv = yargs
+  .option('followRedirects', {
+    boolean: true,
+  }).argv
 
 const defaults = {}
 
