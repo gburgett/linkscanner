@@ -3,8 +3,6 @@ import { isURL, URL } from './url'
 
 export interface ReentryOptions extends TransformOptions {
   objectMode?: true
-
-  hostnames?: Set<string>
 }
 
 export class Reentry extends Transform {
@@ -13,18 +11,14 @@ export class Reentry extends Transform {
     constructor(public readonly size: number) {}
   }
 
-  public readonly hostnames: Set<string>
-
   private readonly _checked = new Set<URL>()
 
-  constructor(readonly options: ReentryOptions) {
+  constructor(readonly options?: Partial<ReentryOptions>) {
     super(Object.assign({},
       options,
       {
       objectMode: true,
     }))
-
-    this.hostnames = options.hostnames || new Set<string>()
   }
 
   public _transform(url: URL | typeof Reentry.EOF, encoding: any, cb: TransformCallback): void {
@@ -42,19 +36,10 @@ export class Reentry extends Transform {
       return
     }
 
-    // normalize the URL
-    if (this.hostnames.size == 0) {
-      // the first written string sets the hostname
-      this.hostnames.add(url.hostname)
-    }
-
     if (this._checked.has(url)) {
       return
     }
-    if (this.hostnames.has(url.hostname)) {
-      // only scan URLs matching our known hostnames
-      this.push(url)
-    }
+    this.push(url)
     this._checked.add(url)
   }
 

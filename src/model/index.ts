@@ -2,6 +2,7 @@ import { Response } from 'cross-fetch'
 import { URL } from '../url'
 
 export interface Result {
+  method: string
   url: URL
   host: string
   status: number

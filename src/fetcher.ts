@@ -71,7 +71,7 @@ export class Fetcher extends ParallelTransform {
       headers: {
         Accept: this._acceptMimeType,
       },
-      redirect: 'follow',
+      redirect: 'manual',
     })
 
     const start = isomorphicPerformance.now()
@@ -105,6 +105,7 @@ function createResult(req: Request, resp: Response) {
   const rawUrl = resp.url && resp.url.length > 0 ? resp.url : req.url
   const url = parseUrl(rawUrl)
   return {
+    method: req.method,
     url,
     host: url.hostname,
     status: resp.status,
