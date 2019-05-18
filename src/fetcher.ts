@@ -72,12 +72,12 @@ export class Fetcher extends ParallelTransform {
     await this._fetch(url)
   }
 
-  private async _fetch(url: URL): Promise<void> {
+  private async _fetch(url: URL, method?: 'GET' | 'HEAD'): Promise<void> {
     const { followRedirects, logger } = {
       logger: defaultLogger,
       ...this.options,
     }
-    const method = this.options.hostnames.has(url.hostname) ?
+    method = method || this.options.hostnames.has(url.hostname) ?
       'GET' :
       'HEAD'
 
@@ -131,6 +131,13 @@ export class Fetcher extends ParallelTransform {
 
         await this._fetch(parsedLocation)
       }
+    } else if (response.status == 405 && method == 'HEAD') {
+      /*
+       * Some servers do not respond correctly to a 'head' request method. When true, a link resulting in an HTTP
+       * 405 "Method Not Allowed" error will be re-requested using a 'get' method before deciding that it is broken.
+       * This is only relevant if the requestMethod option is set to 'head'.
+       */
+      await this._fetch(url, 'GET')
     }
   }
 }
