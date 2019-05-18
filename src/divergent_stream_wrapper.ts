@@ -22,7 +22,6 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
 
   public on = this.addListener
   public prependOnceListener: any = raiseNotImplemented('prependOnceListener')
-  public removeListener: any = raiseNotImplemented('removeListener')
   public off: any = raiseNotImplemented('off')
   public removeAllListeners: any = raiseNotImplemented('removeAllListeners')
 
@@ -95,6 +94,16 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     }
     this._eventNames.add(event)
     if (this._streams) { this._streams.forEach((value) => value.prependListener(event, listener)) }
+    return this
+  }
+
+  public removeListener(event: string | symbol, listener: (...args: any[]) => void): this {
+    super.removeListener(event, listener)
+
+    if (isOverriddenEvent(event)) {
+      return this
+    }
+    if (this._streams) { this._streams.forEach((value) => value.removeListener(event, listener)) }
     return this
   }
 

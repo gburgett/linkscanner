@@ -10,18 +10,28 @@ const argv = yargs
   .option('verbose', {
     boolean: true,
     alias: 'v',
+  })
+  .option('recursive', {
+    boolean: true,
+    alias: 'r',
+  })
+  .option('exclude-external', {
+    boolean: true,
+    alias: 'e',
   }).argv
 
-const defaults = {}
+const defaults = {
+  logger: argv.verbose ? verboseLogger : defaultLogger,
+}
 
 Run({
   ...defaults,
-  logger: argv.verbose ? verboseLogger : defaultLogger,
   source: argv._,
   ...argv,
 })
   .then(
     () => {
+      defaults.logger.debug('done')
       process.exit(0)
     },
     (ex: any) => {

@@ -1,12 +1,12 @@
 import { Semaphore } from 'async-toolbox'
 import { collect, Readable } from 'async-toolbox/stream'
-
 import { Duplex } from 'stream'
+
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
 import { Result } from './model'
-import { EOF, isEOF, Reentry } from './reentry'
+import { EOF, handleEOF, isEOF, Reentry } from './reentry'
 import { loadSource } from './source'
 import { parseUrl, parseUrls, URL } from './url'
 
@@ -14,6 +14,8 @@ export interface Args {
   source: string | string[],
   hostnames?: string | string[]
   followRedirects?: boolean
+  recursive?: boolean
+  'exclude-external'?: boolean
 
   logger?: Logger
 }
@@ -44,6 +46,9 @@ async function Run(args: Args): Promise<void> {
 interface BuildStreamOptions {
   hostnames: Set<string>
   followRedirects: boolean
+  recursive: boolean
+  'exclude-external': boolean
+
   logger: Logger
 }
 
@@ -58,23 +63,25 @@ export function BuildStream(
 ): Readable<Result> {
   const {
     hostnames,
-    followRedirects,
     logger,
+    ...options
   } = Object.assign({
-    hostnames: new Set<string>(),
-    followRedirects: false,
-    logger: defaultLogger,
+    'hostnames': new Set<string>(),
+    'logger': defaultLogger,
+    'followRedirects': false,
+    'recursive': false,
+    'exclude-external': false,
   }, args)
   const hostnameSet = new HostnameSet(
     hostnames,
     {
-      followRedirects,
+      followRedirects: options.followRedirects,
       logger,
     },
   )
   const reentry = new Reentry()
 
-  const results = source
+  const fetcher = source
     .pipe(reentry, { end: false })
     .pipe(new DivergentStreamWrapper({
       objectMode: true,
@@ -88,6 +95,9 @@ export function BuildStream(
       createStream: (hostname) => hostnameSet.streamFor(hostname),
     }))
 
+  const results = fetcher
+    .pipe(handleEOF(reentry))
+
   const sourceUrls = new Set<URL>()
   source.on('data', (url: URL) => {
     if (hostnameSet.hostnames.size == 0) {
@@ -97,16 +107,23 @@ export function BuildStream(
 
     sourceUrls.add(url)
   })
-  results.on('url', ({url, parent}: { url: URL, parent: URL }) => {
-    if (!hostnameSet.hostnames.has(url.hostname)) {
+  source.on('end', () => {
+    reentry.tryEnd()
+  })
+  fetcher.on('url', ({url, parent}: { url: URL, parent: URL }) => {
+    if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
       // only scan URLs matching our known hostnames
+      logger.debug('external', url.toString())
       return
     }
 
-    if (sourceUrls.has(parent)) {
-      // recursively push to the top of the stream
-      reentry.push(url)
+    if (!options.recursive && !sourceUrls.has(parent)) {
+      // Do not scan URLs that didn't come straight from one of our source URLs.
+      logger.debug('recursive', url.toString(), parent.toString())
+      return
     }
+
+    reentry.write(url)
   })
 
   return results
