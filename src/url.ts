@@ -4,8 +4,8 @@ import { URL } from 'universal-url'
 
 export { URL } from 'universal-url'
 
-export function parseUrl(url: string): URL {
-  return new URL(url)
+export function parseUrl(url: string, base?: string): URL {
+  return new URL(url, base)
 }
 
 export function isURL(object: any): object is URL {

@@ -93,7 +93,11 @@ export class Fetcher extends ParallelTransform {
     const start = isomorphicPerformance.now()
     const response = await fetch(request)
 
-    const contentType = response.headers.get('content-type')
+    let contentType = response.headers.get('content-type')
+    if (contentType) {
+      // text/html; charset=utf-8
+      contentType = contentType.split(';')[0]
+    }
     const parser = this._parsers[contentType || 'default'] ||
       this._parsers.default ||
       new RegexpParser()
