@@ -115,7 +115,7 @@ export class Fetcher extends ParallelTransform {
     }
     const end = isomorphicPerformance.now()
 
-    const fullResult = {
+    const fullResult: Result = {
       ...partialResult,
       ms: end - start,
     }
@@ -154,5 +154,6 @@ function createResult(req: Request, resp: Response) {
     url,
     host: url.hostname,
     status: resp.status,
+    parent: parseUrl(req.url),
   }
 }

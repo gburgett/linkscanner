@@ -7,6 +7,7 @@ export interface Result {
   host: string
   status: number
   ms: number
+  parent: URL
 }
 
 export interface PartialResult {

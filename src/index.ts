@@ -39,7 +39,12 @@ async function Run(args: Args): Promise<void> {
   })
 
   await collect(results, (result: Result) => {
-    options.logger.log(`${result.status} ${result.method.padEnd(4)} ${result.url.toString()}`)
+    options.logger.log([
+      result.status,
+      result.method.padEnd(4),
+      result.url,
+      result.parent,
+    ].join(' '))
   })
 }
 
