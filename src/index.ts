@@ -27,8 +27,8 @@ async function Run(args: Args): Promise<void> {
   }, args)
 
   const hostnames = options.hostnames ?
-    new Set([...options.hostnames]) :
-    new Set([...options.source].map((s) => parseUrl(s).hostname))
+    new Set(Array.from(options.hostnames)) :
+    new Set(Array.from(options.source).map((s) => parseUrl(s).hostname))
 
   const source = loadSource(options)
     .pipe(parseUrls())
@@ -141,11 +141,7 @@ class HostnameSet {
   private _streams = new Map<string, Duplex>()
   private readonly _options: HostnameSetOptions
 
-  public get hostnames() {
-    return this._hostnames
-  }
-
-  constructor(private readonly _hostnames: Set<string>,
+  constructor(public readonly hostnames: Set<string>,
               readonly options?: Partial<HostnameSetOptions>) {
     this._options = Object.assign({
       followRedirects: false,

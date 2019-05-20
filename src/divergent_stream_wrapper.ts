@@ -110,7 +110,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
   private _streamsFor(chunk: any): Duplex[] {
     let hashes = this._hashChunk(chunk)
     if (isALL(hashes)) {
-      hashes = [...this._streams.keys()]
+      hashes = Array.from(this._streams.keys())
     } else if (!Array.isArray(hashes)) {
       hashes = [hashes]
     }
