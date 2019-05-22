@@ -1,9 +1,7 @@
-import { Semaphore } from 'async-toolbox'
 import { collect, Readable } from 'async-toolbox/stream'
-import { Duplex } from 'stream'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
-import { Fetcher } from './fetcher'
+import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
@@ -135,47 +133,3 @@ export function BuildStream(
 }
 
 export default Run
-
-interface HostnameSetOptions {
-  followRedirects: boolean,
-  logger: Logger
-}
-
-class HostnameSet {
-  private _locks = new Map<string, Semaphore>()
-  private _streams = new Map<string, Duplex>()
-  private readonly _options: HostnameSetOptions
-
-  constructor(public readonly hostnames: Set<string>,
-              readonly options?: Partial<HostnameSetOptions>) {
-    this._options = Object.assign({
-      followRedirects: false,
-      logger: defaultLogger,
-    },
-    options)
-  }
-
-  public lockFor(hostname: string) {
-    const existing = this._locks.get(hostname)
-    if (existing) {
-      return existing
-    }
-
-    const semaphore = new Semaphore()
-    this._locks.set(hostname, semaphore)
-    return semaphore
-  }
-
-  public streamFor(hostname: string): Duplex {
-    const existing = this._streams.get(hostname)
-    if (existing) {
-      return existing
-    }
-
-    return new Fetcher({
-      ...this._options,
-      hostnames: this.hostnames,
-      semaphore: this.lockFor(hostname),
-    })
-  }
-}
