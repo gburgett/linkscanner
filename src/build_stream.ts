@@ -1,11 +1,12 @@
 import { Readable } from 'async-toolbox/stream'
+import { Transform } from 'stream'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
-import { parseUrls } from './url'
+import { parseUrl, parseUrls } from './url'
 
 interface BuildStreamOptions {
   hostnames: Set<string>
@@ -45,8 +46,25 @@ export function BuildStream(
   )
   const reentry = new Reentry()
 
+  const sourceUrls = new Set<URL>()
+  const sourceUrlTracker = new Transform({
+    objectMode: true,
+    transform(url: URL, encoding, done) {
+      if (!args || !args.hostnames) {
+        // since hostnames not explicitly provided, any sourceUrl in the readable
+        // is considered a source hostname for which we'll do a GET
+        hostnameSet.hostnames.add(url.hostname)
+      }
+
+      sourceUrls.add(url)
+      this.push(url)
+      done()
+    },
+  })
+
   const fetcher = source
     .pipe(parseUrls())
+    .pipe(sourceUrlTracker)
     .pipe(reentry, { end: false })
     .pipe(new DivergentStreamWrapper({
       objectMode: true,
@@ -63,14 +81,8 @@ export function BuildStream(
   const results = fetcher
     .pipe(handleEOF(reentry))
 
-  const sourceUrls = new Set<URL>()
   source.on('data', (url: URL) => {
-    if (hostnameSet.hostnames.size == 0) {
-      // the first written string sets the hostname
-      hostnameSet.hostnames.add(url.hostname)
-    }
 
-    sourceUrls.add(url)
   })
   source.on('end', () => {
     reentry.tryEnd()

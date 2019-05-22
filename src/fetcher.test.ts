@@ -14,6 +14,10 @@ describe('Fetcher', () => {
       hostnames: new Set(['test.com']),
     })
 
+  beforeEach(() => {
+    fetchMock.reset()
+  })
+
   it('gets a result from a page', async () => {
     const uut = instance()
 
