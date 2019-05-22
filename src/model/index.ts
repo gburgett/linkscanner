@@ -7,11 +7,16 @@ export interface Result {
   host: string
   status: number
   ms: number
-  parent: URL
+  parent?: URL
 }
 
 export interface PartialResult {
   url: URL
   method: string,
   response: Response
+}
+
+export interface Chunk {
+  url: URL,
+  parent?: URL,
 }

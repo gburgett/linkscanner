@@ -4,7 +4,7 @@ import { ReadLock } from 'async-toolbox'
 import {Response} from 'cross-fetch'
 import 'cross-fetch/polyfill'
 import { defaultLogger, Logger } from './logger'
-import { Result } from './model'
+import { Chunk, Result } from './model'
 import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
@@ -62,17 +62,17 @@ export class Fetcher extends ParallelTransform {
       } as Parsers
   }
 
-  public async _transformAsync(url: URL | EOF, lock: ReadLock): Promise<void> {
-    if (isEOF(url)) {
+  public async _transformAsync(chunk: Chunk | EOF, lock: ReadLock): Promise<void> {
+    if (isEOF(chunk)) {
       await lock.upgrade()
-      this.push(url)
+      this.push(chunk)
       return
     }
 
-    await this._fetch(url)
+    await this._fetch(chunk)
   }
 
-  private async _fetch(url: URL, method?: 'GET' | 'HEAD'): Promise<void> {
+  private async _fetch({ url, parent }: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
     const { followRedirects, logger } = {
       logger: defaultLogger,
       ...this.options,
@@ -102,7 +102,10 @@ export class Fetcher extends ParallelTransform {
       this._parsers.default ||
       new RegexpParser()
 
-    const partialResult = createResult(request, response)
+    const partialResult = {
+      parent,
+      ...createResult(request, response),
+    }
     logger.debug(`${request.method} ${request.url} ${response.status}`)
 
     if (partialResult.status >= 200 && partialResult.status < 300) {
@@ -133,7 +136,7 @@ export class Fetcher extends ParallelTransform {
           return
         }
 
-        await this._fetch(parsedLocation)
+        await this._fetch({ url: parsedLocation, parent })
       }
     } else if (response.status == 405 && method == 'HEAD') {
       /*
@@ -141,7 +144,7 @@ export class Fetcher extends ParallelTransform {
        * 405 "Method Not Allowed" error will be re-requested using a 'get' method before deciding that it is broken.
        * This is only relevant if the requestMethod option is set to 'head'.
        */
-      await this._fetch(url, 'GET')
+      await this._fetch({ url, parent }, 'GET')
     }
   }
 }
@@ -154,6 +157,5 @@ function createResult(req: Request, resp: Response) {
     url,
     host: url.hostname,
     status: resp.status,
-    parent: parseUrl(req.url),
   }
 }

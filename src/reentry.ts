@@ -1,7 +1,7 @@
 import { Writable } from 'async-toolbox/stream'
 import { Transform, TransformCallback, TransformOptions } from 'stream'
-import * as util from 'util'
-import { isURL, URL } from './url'
+import { Chunk } from './model'
+import { parseUrl, URL } from './url'
 
 export interface ReentryOptions extends TransformOptions {
   objectMode?: true
@@ -19,24 +19,25 @@ export class Reentry extends Transform {
     }))
   }
 
-  public _transform(url: URL | typeof EOF, encoding: any, cb: TransformCallback): void {
-    if (!isURL(url)) {
+  public _transform(chunk: Chunk | string | URL | EOF, encoding: any, cb: TransformCallback): void {
+    if (isEOF(chunk)) {
       cb()
-      if (url instanceof EOF) {
-        if (this.counter > url.counter) {
-          // more have been pushed - try end again
-          this.tryEnd()
-        } else {
-          this.end()
-        }
-        return
+      if (this.counter > chunk.counter) {
+        // more have been pushed - try end again
+        this.tryEnd()
       } else {
-        return unknownChunk(url)
+        this.end()
       }
+      return
     }
 
+    const ch: Chunk =
+      typeof(chunk) == 'string' ? { url: parseUrl(chunk) }
+        : ('url' in chunk) ? chunk // chunk instanceof Chunk
+        : { url: chunk } // chunk instanceof URL
+
     this.counter++
-    this._run(url)
+    this._run(ch)
     cb()
   }
 
@@ -44,12 +45,12 @@ export class Reentry extends Transform {
     this.push(new EOF(this.counter))
   }
 
-  private _run(url: URL) {
-    if (this._checked.has(url.toString())) {
+  private _run(chunk: Chunk) {
+    if (this._checked.has(chunk.url.toString())) {
       return
     }
-    this._checked.add(url.toString())
-    this.push(url)
+    this._checked.add(chunk.url.toString())
+    this.push(chunk)
   }
 }
 
@@ -72,16 +73,16 @@ export function handleEOF(reentry: Writable<EOF>) {
 
   return new Transform({
     objectMode: true,
-    transform(url: URL | EOF, encoding, done) {
-      if (isEOF(url)) {
+    transform(chunk: Chunk | EOF, encoding, done) {
+      if (isEOF(chunk)) {
         // Once the EOF gets back to the reentry, the reentry can decide
         // that we're finally done.
-        if (url.counter > lastCounter) {
-          lastCounter = url.counter
-          reentry.write(url)
+        if (chunk.counter > lastCounter) {
+          lastCounter = chunk.counter
+          reentry.write(chunk)
         }
       } else {
-        this.push(url)
+        this.push(chunk)
       }
       done()
     },

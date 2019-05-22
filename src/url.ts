@@ -1,6 +1,7 @@
 import { Transform } from 'async-toolbox/stream'
 import * as stream from 'stream'
 import { URL } from 'universal-url'
+import { Chunk } from './model'
 
 export { URL } from 'universal-url'
 
@@ -15,9 +16,9 @@ export function isURL(object: any): object is URL {
 export function parseUrls(): Transform<string, URL> {
   return new stream.Transform({
     objectMode: true,
-    transform(chunk, encoding, done) {
+    transform(strChunk, encoding, done) {
       try {
-        this.push(parseUrl(chunk))
+        this.push(parseUrl(strChunk))
         done()
       } catch (ex) {
         done(ex)

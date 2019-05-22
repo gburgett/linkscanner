@@ -5,7 +5,7 @@ import { Duplex } from 'stream'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
-import { Result } from './model'
+import { Chunk, Result } from './model'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
 import { loadSource } from './source'
 import { parseUrl, parseUrls, URL } from './url'
@@ -31,7 +31,6 @@ async function Run(args: Args): Promise<void> {
     new Set(Array.from(options.source).map((s) => parseUrl(s).hostname))
 
   const source = loadSource(options)
-    .pipe(parseUrls())
 
   const results = BuildStream(source, {
     ...options,
@@ -63,7 +62,7 @@ interface BuildStreamOptions {
  * @param hostnames
  */
 export function BuildStream(
-  source: Readable<URL>,
+  source: Readable<string>,
   args?: Partial<BuildStreamOptions>,
 ): Readable<Result> {
   const {
@@ -87,15 +86,16 @@ export function BuildStream(
   const reentry = new Reentry()
 
   const fetcher = source
+    .pipe(parseUrls())
     .pipe(reentry, { end: false })
     .pipe(new DivergentStreamWrapper({
       objectMode: true,
-      hashChunk: (url: string | EOF) => {
-        if (isEOF(url)) {
+      hashChunk: (chunk: Chunk | EOF) => {
+        if (isEOF(chunk)) {
           // send the EOF to all streams
           return DivergentStreamWrapper.ALL
         }
-        return parseUrl(url).hostname
+        return chunk.url.hostname
       },
       createStream: (hostname) => hostnameSet.streamFor(hostname),
     }))
@@ -128,7 +128,7 @@ export function BuildStream(
       return
     }
 
-    reentry.write(url)
+    reentry.write({url, parent})
   })
 
   return results
