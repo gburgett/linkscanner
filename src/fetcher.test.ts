@@ -8,7 +8,7 @@ import { Fetcher, Parser } from './fetcher'
 import { Result } from './model'
 import { parseUrl } from './url'
 
-describe('Fetch', () => {
+describe('Fetcher', () => {
   const instance = () =>
     new Fetcher({
       hostnames: new Set(['test.com']),
@@ -18,7 +18,7 @@ describe('Fetch', () => {
     const uut = instance()
 
     // act
-    await uut.writeAsync(parseUrl('https://jsonplaceholder.typicode.com'))
+    await uut.writeAsync({ url: parseUrl('https://jsonplaceholder.typicode.com') })
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
@@ -33,7 +33,7 @@ describe('Fetch', () => {
     fetchMock.headOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync(parseUrl('http://other.com'))
+    await uut.writeAsync({ url: parseUrl('http://other.com') })
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
