@@ -1,25 +1,39 @@
 import { expect } from 'chai'
-import { Response } from 'cross-fetch'
+import * as crossFetch from 'cross-fetch'
 import fetchMock from 'fetch-mock'
-import {} from 'mocha'
+import { } from 'mocha'
 
 import { collect } from 'async-toolbox/stream'
-import { Fetcher, Parser } from './fetcher'
+import { Fetcher, FetchOptions } from './fetcher'
 import { Result } from './model'
 import { parseUrl } from './url'
 
 describe('Fetcher', () => {
+  let options: Partial<FetchOptions>
+  let fetchMockSandbox: fetchMock.FetchMockSandbox
+  beforeEach(() => {
+      fetchMock.reset()
+      fetchMockSandbox = fetchMock.sandbox()
+      options = {
+        fetch: {
+          ...crossFetch,
+          fetch: fetchMockSandbox,
+          Request: fetchMock.config.Request!,
+        },
+      }
+    })
+
   const instance = () =>
     new Fetcher({
+      ...options,
       hostnames: new Set(['test.com']),
     })
 
-  beforeEach(() => {
-    fetchMock.reset()
-  })
-
   it('gets a result from a page', async () => {
-    const uut = instance()
+    const uut = new Fetcher({
+      // note: intentionally not setting a mock fetcher.  This is a true integration test.
+      hostnames: new Set(['test.com']),
+    })
 
     // act
     await uut.writeAsync({ url: parseUrl('https://jsonplaceholder.typicode.com') })
@@ -34,7 +48,7 @@ describe('Fetcher', () => {
   it('performs a HEAD request when the host does not match', async () => {
     const uut = instance()
 
-    fetchMock.headOnce('http://other.com', 200)
+    fetchMockSandbox.headOnce('http://other.com', 200)
 
     // act
     await uut.writeAsync({ url: parseUrl('http://other.com') })
@@ -45,7 +59,7 @@ describe('Fetcher', () => {
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/')
 
-    const call = fetchMock.lastCall(/other\.com/)!
+    const call = fetchMockSandbox.lastCall(/other\.com/)!
     expect(call[1]!.method).to.eq('HEAD')
   })
 })

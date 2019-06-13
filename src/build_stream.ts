@@ -2,19 +2,22 @@ import { Readable } from 'async-toolbox/stream'
 import { Transform } from 'stream'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
+import { FetchInterface } from './fetcher'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
-import { parseUrl, parseUrls } from './url'
+import { parseUrls } from './url'
+import { assign, Options } from './util'
 
-interface BuildStreamOptions {
+export interface BuildStreamOptions {
   hostnames: Set<string>
   followRedirects: boolean
   recursive: boolean
   'exclude-external': boolean
 
   logger: Logger
+  fetch?: FetchInterface
 }
 
 /**
@@ -24,13 +27,13 @@ interface BuildStreamOptions {
  */
 export function BuildStream(
   source: Readable<string>,
-  args?: Partial<BuildStreamOptions>,
+  args?: Options<BuildStreamOptions>,
 ): Readable<Result> {
   const {
     hostnames,
     logger,
     ...options
-  } = Object.assign({
+  } = assign({
     'hostnames': new Set<string>(),
     'logger': defaultLogger,
     'followRedirects': false,
@@ -40,6 +43,7 @@ export function BuildStream(
   const hostnameSet = new HostnameSet(
     hostnames,
     {
+      ...options,
       followRedirects: options.followRedirects,
       logger,
     },
@@ -87,7 +91,7 @@ export function BuildStream(
   source.on('end', () => {
     reentry.tryEnd()
   })
-  fetcher.on('url', ({url, parent}: { url: URL, parent: URL }) => {
+  fetcher.on('url', ({ url, parent }: { url: URL, parent: URL }) => {
     if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
       // only scan URLs matching our known hostnames
       logger.debug('external', url.toString())
@@ -100,7 +104,7 @@ export function BuildStream(
       return
     }
 
-    reentry.write({url, parent})
+    reentry.write({ url, parent })
   })
 
   return results

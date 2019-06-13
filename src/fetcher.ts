@@ -1,7 +1,7 @@
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 require('es6-promise/auto')
 import { ReadLock } from 'async-toolbox'
-import {Response} from 'cross-fetch'
+import * as crossFetch from 'cross-fetch'
 import 'cross-fetch/polyfill'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
@@ -9,6 +9,7 @@ import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
+import { assign, Options } from './util'
 
 export interface Parser {
   parse(response: Response, request: Request, push: (result: URL) => void): Promise<void>
@@ -18,19 +19,30 @@ interface Parsers {
   [mimeType: string]: Parser
 }
 
+const defaultParsers: Parsers = {
+  'default': new RegexpParser(),
+  'text/html': new CheerioParser(),
+}
+
+export interface FetchInterface {
+  fetch: (input: Request) => Promise<Response>,
+  Request: new (url: string, requestInit?: RequestInit) => Request,
+}
+
 export interface FetchOptions extends ParallelTransformOptions {
-  objectMode?: true
+  objectMode: true
 
   hostnames: Set<string>
 
-  acceptMimeTypes?: string[]
-  followRedirects?: boolean
+  acceptMimeTypes: string[]
+  followRedirects: boolean
 
-  parsers?: Parsers
-  logger?: Logger
+  parsers: Parsers
+  logger: Logger
+  fetch: FetchInterface
 }
 
-const isomorphicPerformance = typeof(performance) != 'undefined' ?
+const isomorphicPerformance = typeof (performance) != 'undefined' ?
   performance :
   // we only get here in nodejs.  Use eval to confuse webpack so it doesn't import
   // the perf_hooks package.
@@ -38,28 +50,25 @@ const isomorphicPerformance = typeof(performance) != 'undefined' ?
   eval('require')('perf_hooks').performance
 
 export class Fetcher extends ParallelTransform {
-  private _acceptMimeType: string
-  private _parsers: Parsers
+  private readonly options: FetchOptions
 
-  constructor(private readonly options: FetchOptions) {
-    super(Object.assign(
+  constructor(options: Options<FetchOptions, 'hostnames'>) {
+    const opts = assign(
       {
         logger: defaultLogger,
+        followRedirects: false,
+        parsers: defaultParsers,
+        acceptMimeTypes: ['text/html', 'application/json'],
+        // default to the global fetch
+        fetch: crossFetch,
       },
-        options,
+      options,
       {
         objectMode: true,
       },
-    ))
-
-    this._acceptMimeType = options.acceptMimeTypes ?
-      options.acceptMimeTypes.join(', ') :
-      'text/html, application/json'
-
-    this._parsers = options.parsers || {
-        'default': new RegexpParser(),
-        'text/html': new CheerioParser(),
-      } as Parsers
+    )
+    super(opts)
+    this.options = opts
   }
 
   public async _transformAsync(chunk: Chunk | EOF, lock: ReadLock): Promise<void> {
@@ -81,16 +90,18 @@ export class Fetcher extends ParallelTransform {
       'GET' :
       'HEAD'
 
+    const { fetch, Request } = this.options.fetch
     const request = new Request(url.toString(), {
       method,
       headers: {
-        Accept: this._acceptMimeType,
+        Accept: this.options.acceptMimeTypes.join(', '),
       },
       redirect: 'manual',
     })
 
     logger.debug(`${request.method} ${request.url}`)
     const start = isomorphicPerformance.now()
+
     const response = await fetch(request)
 
     let contentType = response.headers.get('content-type')
@@ -98,8 +109,8 @@ export class Fetcher extends ParallelTransform {
       // text/html; charset=utf-8
       contentType = contentType.split(';')[0]
     }
-    const parser = this._parsers[contentType || 'default'] ||
-      this._parsers.default ||
+    const parser = this.options.parsers[contentType || 'default'] ||
+      this.options.parsers.default ||
       new RegexpParser()
 
     const partialResult = {

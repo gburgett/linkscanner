@@ -1,19 +1,30 @@
 import { expect } from 'chai'
-import { Response } from 'cross-fetch'
+import * as crossFetch from 'cross-fetch'
 import fetchMock from 'fetch-mock'
-import {} from 'mocha'
+import { } from 'mocha'
 
 import { collect, toReadable } from 'async-toolbox/stream'
-import {BuildStream} from './build_stream'
+import { BuildStream, BuildStreamOptions } from './build_stream'
 import { Result } from './model'
+import { Options } from './util'
 
 describe('BuildStream', () => {
+  let options: Options<BuildStreamOptions>
+  let fetchMockSandbox: fetchMock.FetchMockSandbox
   beforeEach(() => {
     fetchMock.reset()
+    fetchMockSandbox = fetchMock.sandbox()
+    options = {
+      fetch: {
+        fetch: fetchMockSandbox,
+        Request: fetchMock.config.Request!,
+      },
+      logger: console
+    }
   })
 
   it('fetches a single URL', async () => {
-    fetchMock.getOnce('http://test.com/testpage',
+    fetchMockSandbox.getOnce('http://test.com/testpage',
       {
         status: 200,
         headers: {
@@ -24,7 +35,7 @@ describe('BuildStream', () => {
 
     const source = toReadable(['http://test.com/testpage'])
 
-    const uut = BuildStream(source)
+    const uut = BuildStream(source, options)
 
     // act
     const result: Result[] = await collect(uut)
@@ -35,7 +46,7 @@ describe('BuildStream', () => {
   })
 
   it('recurses into other URLs found on page', async () => {
-    fetchMock.getOnce('http://test.com/testpage',
+    fetchMockSandbox.getOnce('http://test.com/testpage',
       {
         status: 200,
         headers: {
@@ -43,11 +54,11 @@ describe('BuildStream', () => {
         },
         body: `<html><body><a href="http://other.com">Other Page</a></body></html>`,
       })
-    fetchMock.headOnce('http://other.com', 200)
+    fetchMockSandbox.headOnce('http://other.com', 200)
 
     const source = toReadable(['http://test.com/testpage'])
 
-    const uut = BuildStream(source)
+    const uut = BuildStream(source, options)
 
     // act
     const result: Result[] = await collect(uut)
@@ -60,7 +71,7 @@ describe('BuildStream', () => {
   })
 
   it('deep recurses for same host', async () => {
-    fetchMock.getOnce('http://test.com/testpage/',
+    fetchMockSandbox.getOnce('http://test.com/testpage/',
       {
         status: 200,
         headers: {
@@ -68,7 +79,7 @@ describe('BuildStream', () => {
         },
         body: `<html><body><a href="./relative/link">Relative Page</a></body></html>`,
       })
-    fetchMock.getOnce('http://test.com/testpage/relative/link',
+    fetchMockSandbox.getOnce('http://test.com/testpage/relative/link',
       {
         status: 200,
         headers: {
@@ -76,11 +87,12 @@ describe('BuildStream', () => {
         },
         body: `<html><body><a href="http://other.com">Other Page</a></body></html>`,
       })
-    fetchMock.headOnce('http://other.com', 200)
+    fetchMockSandbox.headOnce('http://other.com', 200)
 
     const source = toReadable(['http://test.com/testpage/'])
 
     const uut = BuildStream(source, {
+      ...options,
       recursive: true,
     })
 
@@ -100,7 +112,7 @@ describe('BuildStream', () => {
   })
 
   it('does not deep recurse when recursive: false', async () => {
-    fetchMock.getOnce('http://test.com/testpage/',
+    fetchMockSandbox.getOnce('http://test.com/testpage/',
       {
         status: 200,
         headers: {
@@ -108,7 +120,7 @@ describe('BuildStream', () => {
         },
         body: `<html><body><a href="./relative/link">Relative Page</a></body></html>`,
       })
-    fetchMock.getOnce('http://test.com/testpage/relative/link',
+    fetchMockSandbox.getOnce('http://test.com/testpage/relative/link',
       {
         status: 200,
         headers: {
@@ -116,11 +128,12 @@ describe('BuildStream', () => {
         },
         body: `<html><body><a href="http://other.com">Other Page</a></body></html>`,
       })
-    fetchMock.headOnce('http://other.com', 200)
+    fetchMockSandbox.headOnce('http://other.com', 200)
 
     const source = toReadable(['http://test.com/testpage/'])
 
     const uut = BuildStream(source, {
+      ...options,
       recursive: false,
     })
 

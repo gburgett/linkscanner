@@ -1,12 +1,14 @@
 import { Semaphore } from 'async-toolbox'
 import { Duplex } from 'stream'
 
-import { Fetcher } from './fetcher'
+import { Fetcher, FetchInterface } from './fetcher'
 import { defaultLogger, Logger } from './logger'
+import { assign, Options } from './util'
 
 interface HostnameSetOptions {
   followRedirects: boolean,
   logger: Logger
+  fetch?: FetchInterface
 }
 
 export class HostnameSet {
@@ -15,12 +17,12 @@ export class HostnameSet {
   private readonly _options: HostnameSetOptions
 
   constructor(public readonly hostnames: Set<string>,
-              readonly options?: Partial<HostnameSetOptions>) {
-    this._options = Object.assign({
+              options?: Options<HostnameSetOptions>) {
+    this._options = assign({
       followRedirects: false,
       logger: defaultLogger,
     },
-    options)
+      options)
   }
 
   public lockFor(hostname: string) {
