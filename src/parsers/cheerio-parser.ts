@@ -9,11 +9,17 @@ export class CheerioParser {
     const text = await response.text()
     const $ = cheerio.load(text)
 
+    let baseUrl = response.url || request.url
+    const baseElement = $('base').first()
+    if (baseElement && baseElement.attr('href')) {
+      baseUrl = parseUrl(baseElement.attr('href'), response.url || request.url).toString()
+    }
+
     $('a[href]').each((index, anchorTag) => {
       const href = $(anchorTag).attr('href')
       if (href) {
         try {
-          const url = parseUrl(href, response.url || request.url)
+          const url = parseUrl(href, baseUrl)
           if (['http:', 'https:'].includes(url.protocol)) {
             push(url)
           }
