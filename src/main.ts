@@ -18,6 +18,10 @@ const argv = yargs
   .option('exclude-external', {
     boolean: true,
     alias: 'e',
+  })
+  .option('formatter', {
+    alias: 'f',
+    choices: ['table'] as const,
   }).argv
 
 const defaults = {

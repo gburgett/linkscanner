@@ -1,8 +1,14 @@
+import { onceAsync } from 'async-toolbox/events';
+import { Writable } from 'stream';
 import { BuildStream } from './build_stream'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
 import { loadSource } from './source'
 import { parseUrl } from './url'
+
+const formatters = {
+  table: (args: Args) => new TableFormatter(args),
+}
 
 export interface Args {
   source: string | string[],
@@ -10,6 +16,7 @@ export interface Args {
   followRedirects?: boolean
   recursive?: boolean
   'exclude-external'?: boolean
+  formatter?: keyof typeof formatters | Writable
 
   logger?: Logger
 }
@@ -31,13 +38,18 @@ async function Run(args: Args): Promise<void> {
     hostnames,
   })
 
-  const formatter = new TableFormatter({
+  const formatter: Writable = (options.formatter &&
+    typeof(options.formatter) == 'string' ?
+      formatters[options.formatter] && formatters[options.formatter](options)
+      : options.formatter
+  ) || new TableFormatter({
     ...options,
   })
 
-  await results
+  const withFormatter = results
     .pipe(formatter)
-    .onceAsync('finish')
+
+  await onceAsync(withFormatter, 'finish')
 }
 
 export default Run
