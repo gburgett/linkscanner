@@ -29,3 +29,10 @@ export function assign(...partials: any[]): any {
 
   return result
 }
+
+export function present<T>(value: T | null | undefined): value is T {
+  if (typeof value == 'string') {
+    return value && /\S/.test(value)
+  }
+  return !!value
+}

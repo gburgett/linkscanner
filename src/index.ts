@@ -1,8 +1,6 @@
-import { collect } from 'async-toolbox/stream'
-
 import { BuildStream } from './build_stream'
+import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
-import { Result } from './model'
 import { loadSource } from './source'
 import { parseUrl } from './url'
 
@@ -33,14 +31,13 @@ async function Run(args: Args): Promise<void> {
     hostnames,
   })
 
-  await collect(results, (result: Result) => {
-    options.logger.log([
-      result.status,
-      result.method.padEnd(4),
-      result.url,
-      result.parent && result.parent.url,
-    ].join(' '))
+  const formatter = new TableFormatter({
+    ...options,
   })
+
+  await results
+    .pipe(formatter)
+    .onceAsync('finish')
 }
 
 export default Run
