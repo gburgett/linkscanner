@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import {} from 'mocha'
 
+import { } from 'async-toolbox/stream'
 import { Logger } from '../logger'
 import { Result } from '../model'
 import { parseUrl } from '../url'

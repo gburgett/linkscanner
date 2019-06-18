@@ -121,4 +121,3 @@ function colorize(text: string, status: number) {
   }
   return chalk.red(text)
 }
-
