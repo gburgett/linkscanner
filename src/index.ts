@@ -1,6 +1,8 @@
-import { onceAsync } from 'async-toolbox/events';
-import { Writable } from 'stream';
+import { onceAsync } from 'async-toolbox/events'
+import { Writable } from 'stream'
+
 import { BuildStream } from './build_stream'
+import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
 import { loadSource } from './source'
@@ -8,6 +10,7 @@ import { parseUrl } from './url'
 
 const formatters = {
   table: (args: Args) => new TableFormatter(args),
+  console: (args: Args) => new ConsoleFormatter(args),
 }
 
 export interface Args {
@@ -42,7 +45,7 @@ async function Run(args: Args): Promise<void> {
     typeof(options.formatter) == 'string' ?
       formatters[options.formatter] && formatters[options.formatter](options)
       : options.formatter
-  ) || new TableFormatter({
+  ) || new ConsoleFormatter({
     ...options,
   })
 

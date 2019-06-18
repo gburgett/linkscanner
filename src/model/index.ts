@@ -8,6 +8,7 @@ export interface Result {
   status: number
   ms: number
   parent?: Result
+  links: URL[]
 }
 
 export interface PartialResult {

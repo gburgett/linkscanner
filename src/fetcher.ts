@@ -116,11 +116,13 @@ export class Fetcher extends ParallelTransform {
     const partialResult = {
       parent,
       ...createResult(request, response),
+      links: [] as URL[],
     }
     logger.debug(`${request.method} ${request.url} ${response.status}`)
 
     if (partialResult.status >= 200 && partialResult.status < 300) {
       await parser.parse(response, request, (u) => {
+        partialResult.links.push(u)
         this.emit('url', {
           url: u,
           parent: partialResult,
