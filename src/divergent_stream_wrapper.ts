@@ -1,4 +1,5 @@
 import { Semaphore } from 'async-toolbox'
+import {onceAsync} from 'async-toolbox/events'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 import { Duplex } from 'stream'
 
@@ -60,9 +61,10 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
   }
 
   public async _flushAsync() {
-    const promises = [] as Array<Promise<void>>
+    const promises = [] as Array<Promise<any>>
     this._streams.forEach((stream) => {
       promises.push(stream.endAsync())
+      promises.push(onceAsync(stream, 'end'))
     })
     await Promise.all(promises)
   }
