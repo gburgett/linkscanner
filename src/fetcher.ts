@@ -123,16 +123,16 @@ export class Fetcher extends ParallelTransform {
       await parser.parse(response, request, (u) => {
         this.emit('url', {
           url: u,
-          parent: url,
+          parent: partialResult,
         })
       })
     }
     const end = isomorphicPerformance.now()
 
-    const fullResult: Result = {
-      ...partialResult,
+    // Assign back to the same object, so that the emitted object tree is maintained.
+    const fullResult: Result = Object.assign(partialResult, {
       ms: end - start,
-    }
+    })
     this.push(fullResult)
 
     if (followRedirects && [301, 302].includes(response.status)) {

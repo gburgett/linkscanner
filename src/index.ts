@@ -38,7 +38,7 @@ async function Run(args: Args): Promise<void> {
       result.status,
       result.method.padEnd(4),
       result.url,
-      result.parent,
+      result.parent && result.parent.url,
     ].join(' '))
   })
 }

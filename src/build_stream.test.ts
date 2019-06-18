@@ -19,7 +19,7 @@ describe('BuildStream', () => {
         fetch: fetchMockSandbox,
         Request: fetchMock.config.Request!,
       },
-      logger: console
+      logger: console,
     }
   })
 
@@ -67,7 +67,7 @@ describe('BuildStream', () => {
     expect(result[1].status).to.eq(200)
     expect(result[1].host).to.eq('other.com')
     expect(result[1].url.toString()).to.eq('http://other.com/')
-    expect(result[1].parent!.toString()).to.eq('http://test.com/testpage')
+    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
   })
 
   it('deep recurses for same host', async () => {
@@ -103,12 +103,12 @@ describe('BuildStream', () => {
     expect(result[1].status).to.eq(200)
     expect(result[1].host).to.eq('test.com')
     expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
-    expect(result[1].parent!.toString()).to.eq('http://test.com/testpage/')
+    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage/')
 
     expect(result[2].status).to.eq(200)
     expect(result[2].host).to.eq('other.com')
     expect(result[2].url.toString()).to.eq('http://other.com/')
-    expect(result[2].parent!.toString()).to.eq('http://test.com/testpage/relative/link')
+    expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage/relative/link')
   })
 
   it('does not deep recurse when recursive: false', async () => {

@@ -7,7 +7,7 @@ export interface Result {
   host: string
   status: number
   ms: number
-  parent?: URL
+  parent?: Result
 }
 
 export interface PartialResult {
@@ -18,5 +18,5 @@ export interface PartialResult {
 
 export interface Chunk {
   url: URL,
-  parent?: URL,
+  parent?: Result,
 }

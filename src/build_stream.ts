@@ -7,7 +7,7 @@ import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
-import { parseUrls } from './url'
+import { parseUrls, URL } from './url'
 import { assign, Options } from './util'
 
 export interface BuildStreamOptions {
@@ -50,7 +50,7 @@ export function BuildStream(
   )
   const reentry = new Reentry()
 
-  const sourceUrls = new Set<URL>()
+  const sourceUrls = new Set<string>()
   const sourceUrlTracker = new Transform({
     objectMode: true,
     transform(url: URL, encoding, done) {
@@ -60,7 +60,7 @@ export function BuildStream(
         hostnameSet.hostnames.add(url.hostname)
       }
 
-      sourceUrls.add(url)
+      sourceUrls.add(url.toString())
       this.push(url)
       done()
     },
@@ -85,22 +85,19 @@ export function BuildStream(
   const results = fetcher
     .pipe(handleEOF(reentry))
 
-  source.on('data', (url: URL) => {
-
-  })
   source.on('end', () => {
     reentry.tryEnd()
   })
-  fetcher.on('url', ({ url, parent }: { url: URL, parent: URL }) => {
+  fetcher.on('url', ({ url, parent }: { url: URL, parent: Result }) => {
     if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
       // only scan URLs matching our known hostnames
       logger.debug('external', url.toString())
       return
     }
 
-    if (!options.recursive && !sourceUrls.has(parent)) {
+    if (!options.recursive && !sourceUrls.has(parent.url.toString())) {
       // Do not scan URLs that didn't come straight from one of our source URLs.
-      logger.debug('recursive', url.toString(), parent.toString())
+      logger.debug('recursive', url.toString(), parent.url.toString())
       return
     }
 
