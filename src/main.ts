@@ -1,11 +1,15 @@
 import yargs from 'yargs'
 
 import Run from '.'
-import { defaultLogger, verboseLogger } from './logger'
+import { debugLogger, defaultLogger } from './logger'
 
 const argv = yargs
   .option('followRedirects', {
     boolean: true,
+  })
+  .option('debug', {
+    boolean: true,
+    alias: 'd',
   })
   .option('verbose', {
     boolean: true,
@@ -25,7 +29,7 @@ const argv = yargs
   }).argv
 
 const defaults = {
-  logger: argv.verbose ? verboseLogger : defaultLogger,
+  logger: argv.debug ? debugLogger : defaultLogger,
 }
 
 Run({

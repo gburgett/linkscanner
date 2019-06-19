@@ -14,7 +14,7 @@ export const defaultLogger = {
   error: console.error,
 }
 
-export const verboseLogger: Logger = {
+export const debugLogger: Logger = {
   log: console.log,
   error: (...args: any[]) => {
     console.error(chalk.red(...args))

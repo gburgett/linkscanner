@@ -19,7 +19,10 @@ export interface Args {
   followRedirects?: boolean
   recursive?: boolean
   'exclude-external'?: boolean
+
   formatter?: keyof typeof formatters | Writable
+  /** Formatter option: more output */
+  verbose?: boolean,
 
   logger?: Logger
 }

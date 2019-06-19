@@ -7,6 +7,7 @@ import { assign, Options, present } from '../util'
 
 export interface ConsoleFormatterOptions {
   logger: Logger
+  verbose?: boolean
 }
 
 export class ConsoleFormatter extends Writable {
