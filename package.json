@@ -1,11 +1,14 @@
 {
   "name": "linkscanner",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A CLI and node library to scan a source URL and recursively check URLs",
   "main": "dist/index.js",
   "bin": {
     "linkscanner": "bin/linkscanner"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "lint": "tslint 'src/**/*.ts'",
     "test-cover": "tsc --project tsconfig.test.json && nyc mocha 'src/**/*.test.js'",
