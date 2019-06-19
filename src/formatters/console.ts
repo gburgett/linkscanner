@@ -91,7 +91,7 @@ export class ConsoleFormatter extends Writable {
     const { logger, verbose } = this.options
 
     this.flushed.add(result.url.toString())
-    if (!verbose && this._isLeaf(result)) {
+    if (result.leaf) {
       // don't print out any leaf node results.
       return
     }
@@ -118,16 +118,6 @@ export class ConsoleFormatter extends Writable {
     ))
 
     logger.log(lines.filter(present).join('\n') + '\n')
-  }
-
-  /** The result is a leaf if none of the nodes has it as a parent */
-  private _isLeaf(result: Result): boolean {
-    for (const value of this.results.values()) {
-      if (value.parent && value.parent === result) {
-        return false
-      }
-    }
-    return true
   }
 }
 
