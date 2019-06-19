@@ -100,8 +100,13 @@ export function BuildStream(
       logger.debug('recursive', url.toString(), parent.url.toString())
       return
     }
+    const isLeafNode: boolean =
+      // external URLs are always leafs
+      !hostnameSet.hostnames.has(url.hostname) ||
+      // If not recursive, any URL found on a page is a leaf node
+      !options.recursive
 
-    reentry.write({ url, parent })
+    reentry.write({ url, parent, leaf: isLeafNode })
   })
 
   return results

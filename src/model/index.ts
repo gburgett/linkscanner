@@ -8,6 +8,7 @@ export interface Result {
   status: number
   ms: number
   parent?: Result
+  leaf?: boolean
   links: URL[]
 }
 
@@ -19,5 +20,14 @@ export interface PartialResult {
 
 export interface Chunk {
   url: URL,
+  /**
+   * Indicates the URL whose body contained this URL as a link.
+   * If nil, this is a root node.
+   */
   parent?: Result,
+  /**
+   * Indicates whether this URL should not be recursed into.
+   * Leaf nodes should not have their body read for links.
+   */
+  leaf?: boolean
 }

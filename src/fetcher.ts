@@ -32,8 +32,6 @@ export interface FetchInterface {
 export interface FetchOptions extends ParallelTransformOptions {
   objectMode: true
 
-  hostnames: Set<string>
-
   acceptMimeTypes: string[]
   followRedirects: boolean
 
@@ -52,7 +50,7 @@ const isomorphicPerformance = typeof (performance) != 'undefined' ?
 export class Fetcher extends ParallelTransform {
   private readonly options: FetchOptions
 
-  constructor(options: Options<FetchOptions, 'hostnames'>) {
+  constructor(options: Options<FetchOptions>) {
     const opts = assign(
       {
         logger: defaultLogger,
@@ -81,14 +79,12 @@ export class Fetcher extends ParallelTransform {
     await this._fetch(chunk)
   }
 
-  private async _fetch({ url, parent }: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
+  private async _fetch({ url, parent, leaf }: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
     const { followRedirects, logger } = {
       logger: defaultLogger,
       ...this.options,
     }
-    method = method || this.options.hostnames.has(url.hostname) ?
-      'GET' :
-      'HEAD'
+    method = method || leaf ? 'HEAD' : 'GET'
 
     const { fetch, Request } = this.options.fetch
     const request = new Request(url.toString(), {
@@ -115,6 +111,7 @@ export class Fetcher extends ParallelTransform {
 
     const partialResult = {
       parent,
+      leaf,
       ...createResult(request, response),
       links: [] as URL[],
     }

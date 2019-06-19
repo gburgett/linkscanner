@@ -120,7 +120,7 @@ describe('BuildStream', () => {
         },
         body: `<html><body><a href="./relative/link">Relative Page</a></body></html>`,
       })
-    fetchMockSandbox.getOnce('http://test.com/testpage/relative/link',
+    fetchMockSandbox.headOnce('http://test.com/testpage/relative/link',
       {
         status: 200,
         headers: {

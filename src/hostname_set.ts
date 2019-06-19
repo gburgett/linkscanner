@@ -44,7 +44,6 @@ export class HostnameSet {
 
     return new Fetcher({
       ...this._options,
-      hostnames: this.hostnames,
       semaphore: this.lockFor(hostname),
     })
   }

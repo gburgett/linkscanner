@@ -26,13 +26,11 @@ describe('Fetcher', () => {
   const instance = () =>
     new Fetcher({
       ...options,
-      hostnames: new Set(['test.com']),
     })
 
   it('gets a result from a page', async () => {
     const uut = new Fetcher({
       // note: intentionally not setting a mock fetcher.  This is a true integration test.
-      hostnames: new Set(['test.com']),
     })
 
     // act
@@ -45,13 +43,13 @@ describe('Fetcher', () => {
     expect(result[0].url.toString()).to.eq('https://jsonplaceholder.typicode.com/')
   })
 
-  it('performs a HEAD request when the host does not match', async () => {
+  it('performs a HEAD request when the node is a leaf', async () => {
     const uut = instance()
 
     fetchMockSandbox.headOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com') })
+    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 

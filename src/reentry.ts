@@ -8,7 +8,7 @@ export interface ReentryOptions extends TransformOptions {
 }
 
 export class Reentry extends Transform {
-  private readonly _checked = new Set<string>()
+  private readonly _checked = new Map<string, Chunk>()
   private counter = 0
 
   constructor(readonly options?: Partial<ReentryOptions>) {
@@ -46,10 +46,15 @@ export class Reentry extends Transform {
   }
 
   private _run(chunk: Chunk) {
-    if (this._checked.has(chunk.url.toString())) {
-      return
+    const checked = this._checked.get(chunk.url.toString())
+    if (checked) {
+      // Only re-check if this request is not a leaf (i.e. came in from the source stream)
+      // and we already checked it as a leaf (i.e. did a HEAD not a GET)
+      if (chunk.leaf || !checked.leaf) {
+        return
+      }
     }
-    this._checked.add(chunk.url.toString())
+    this._checked.set(chunk.url.toString(), chunk)
     this.push(chunk)
   }
 }
