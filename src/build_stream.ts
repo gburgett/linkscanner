@@ -1,4 +1,5 @@
 import { Readable } from 'async-toolbox/stream'
+import * as crossFetch from 'cross-fetch'
 import { Transform } from 'stream'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
@@ -7,7 +8,7 @@ import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
-import { parseUrls, URL } from './url'
+import { parseUrl, parseUrls, URL } from './url'
 import { assign, Options } from './util'
 
 export interface BuildStreamOptions {
@@ -53,16 +54,33 @@ export function BuildStream(
   const sourceUrls = new Set<string>()
   const sourceUrlTracker = new Transform({
     objectMode: true,
-    transform(url: URL, encoding, done) {
-      if (!args || !args.hostnames) {
-        // since hostnames not explicitly provided, any sourceUrl in the readable
-        // is considered a source hostname for which we'll do a GET
-        hostnameSet.hostnames.add(url.hostname)
-      }
+    async transform(url: URL, encoding, done) {
+      try {
 
-      sourceUrls.add(url.toString())
-      this.push(url)
-      done()
+        // always correct the user's typed-in URL if it is redirected.
+        const {fetch, Request} = options.fetch || crossFetch
+        const resp = await fetch(new Request(url.toString(), {
+          redirect: 'follow',
+        }))
+
+        if (resp.url) {
+          // we probably got redirected and the response URL is different from
+          // the source URL
+          url = parseUrl(resp.url)
+        }
+
+        if (!args || !args.hostnames || args.hostnames.size == 0) {
+          // since hostnames not explicitly provided, any sourceUrl in the readable
+          // is considered a source hostname for which we'll do a GET
+          hostnameSet.hostnames.add(url.hostname)
+        }
+        sourceUrls.add(url.toString())
+        this.push(url)
+
+        done()
+      } catch (ex) {
+        done(ex)
+      }
     },
   })
 
@@ -105,6 +123,9 @@ export function BuildStream(
       !hostnameSet.hostnames.has(url.hostname) ||
       // If not recursive, any URL found on a page is a leaf node
       !options.recursive
+    if (isLeafNode) {
+      logger.debug('leaf', url.toString())
+    }
 
     reentry.write({ url, parent, leaf: isLeafNode })
   })

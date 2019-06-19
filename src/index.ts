@@ -46,8 +46,7 @@ async function Run(args: Args): Promise<void> {
   }, args)
 
   const hostnames = options.hostnames ?
-    new Set(Array.from(options.hostnames)) :
-    new Set(Array.from(options.source).map((s) => parseUrl(s).hostname))
+    new Set(Array.from(options.hostnames)) : undefined
 
   const source = loadSource(options)
 
