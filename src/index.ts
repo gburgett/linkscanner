@@ -13,6 +13,18 @@ const formatters = {
   console: (args: Args) => new ConsoleFormatter(args),
 }
 
+const defaultFormatter = (args: Args) => {
+  if (typeof process == 'undefined' || process.stdout.isTTY) {
+    // we're in a nodejs process with output attached to a TTY terminal, OR
+    // we're in a browser process.
+    return new ConsoleFormatter({
+      ...args,
+    })
+  }
+  // we're in a nodejs process with stdout redirected to some file or other program
+  return new TableFormatter(args)
+}
+
 export interface Args {
   source: string | string[],
   hostnames?: string | string[]
@@ -48,9 +60,7 @@ async function Run(args: Args): Promise<void> {
     typeof(options.formatter) == 'string' ?
       formatters[options.formatter] && formatters[options.formatter](options)
       : options.formatter
-  ) || new ConsoleFormatter({
-    ...options,
-  })
+  ) || defaultFormatter(options)
 
   const withFormatter = results
     .pipe(formatter)
