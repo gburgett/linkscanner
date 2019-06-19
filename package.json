@@ -2,7 +2,10 @@
   "name": "linkscanner",
   "version": "0.1.0",
   "description": "A CLI and node library to scan a source URL and recursively check URLs",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "bin": {
+    "linkscanner": "bin/linkscanner"
+  },
   "scripts": {
     "lint": "tslint 'src/**/*.ts'",
     "test-cover": "tsc --project tsconfig.test.json && nyc mocha 'src/**/*.test.js'",
@@ -13,7 +16,7 @@
     "coverage": "npm run test-cover && nyc report --reporter=html && open coverage/index.html",
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "build": "tsc",
-    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "clean": "rm -rf dist; bash -c 'shopt -s globstar; rm src/**/*.js src/**/*.map src/**/*.d.ts'; true"
   },
   "keywords": [
