@@ -30,9 +30,9 @@ export class TableFormatter extends Writable {
     const line = [
       result.status.toFixed(0),
       result.method.padEnd(4),
-      result.url.toString(),
-      result.parent ? result.parent.url.toString() : '',
+      result.url.toString().padEnd(80),
       result.ms.toFixed(0).padStart(4),
+      result.parent ? result.parent.url.toString() : '',
     ]
 
     if (verbose) {
@@ -41,8 +41,8 @@ export class TableFormatter extends Writable {
           'status',
           'method',
           'url'.padEnd(80),
+          'ms'.padStart(4),
           'parent'.padEnd(80),
-          'ms'.padEnd(4),
         ]
         logger.log('| ' + header.join(' | ') + ' |')
         const dividerLine = header.map((h) => h.length).reduce((str, length) => {
@@ -55,8 +55,8 @@ export class TableFormatter extends Writable {
       line[0] = line[0].padEnd(6)
       line[1] = line[1].padEnd(6)
       line[2] = line[2].padEnd(80)
-      line[3] = line[3].padEnd(80)
-      line[4] = line[4].padEnd(4)
+      line[3] = line[3].padEnd(4)
+      line[4] = line[4].padEnd(80)
       logger.log('| ' + line.join(' | ') + ' |')
 
     } else {
