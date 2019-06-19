@@ -95,6 +95,11 @@ export class ConsoleFormatter extends Writable {
       // don't print out any leaf node results.
       return
     }
+    if (result.parent && childResults.length == 0) {
+      // if it's a non-root node, and it didn't have any links on page, it's already
+      // covered by the parent node's printout
+      return
+    }
 
     const linkCount = result.links.length
     const excludedCount = result.links.length - childResults.length
@@ -106,8 +111,9 @@ export class ConsoleFormatter extends Writable {
         result.status,
       ),
       result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
-      chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} excluded. `) +
-        (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
+      linkCount > 0 &&
+        chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} excluded. `) +
+          (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
     ]
     const resultsToPrint = verbose ? childResults : brokenResults
     lines.push(...resultsToPrint.map((r) =>
