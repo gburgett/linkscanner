@@ -5,6 +5,7 @@ import { debugLogger, defaultLogger } from './logger'
 
 const argv = yargs
   .option('followRedirects', {
+    alias: 'L',
     boolean: true,
   })
   .option('debug', {

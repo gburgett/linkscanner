@@ -104,6 +104,7 @@ export class ConsoleFormatter extends Writable {
     const linkCount = result.links.length
     const excludedCount = result.links.length - childResults.length
     const brokenResults = childResults.filter((r) => r.status >= 400)
+    const redirectResults = childResults.filter((r) => r.status >= 300 && r.status < 400)
 
     const lines = [
       colorize(
@@ -115,7 +116,7 @@ export class ConsoleFormatter extends Writable {
         chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} excluded. `) +
           (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
     ]
-    const resultsToPrint = verbose ? childResults : brokenResults
+    const resultsToPrint = verbose ? childResults : brokenResults.concat(redirectResults)
     lines.push(...resultsToPrint.map((r) =>
       colorize(
         `\t${r.status.toFixed(0).padEnd(3)} ${r.method.padEnd(4)} ${r.url.toString()}`,
