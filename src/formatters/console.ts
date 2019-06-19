@@ -44,19 +44,23 @@ export class ConsoleFormatter extends Writable {
       this._flush(result,
         result.links.map((link) => {
           const finished = this.results.get(link.toString())
-          if (finished) { return finished }
-
-          // create a fake "unfinished" result.
-          return {
-            method: '',
-            links: [],
-            ms: 0,
-            parent: result,
-            status: 0,
-            host: link.hostname,
-            url: link,
+          if (!finished) {
+            // create a fake "unfinished" result.
+            return {
+              method: '',
+              links: [],
+              ms: 0,
+              parent: result,
+              status: 0,
+              host: link.hostname,
+              url: link,
+            }
           }
-        }),
+
+          if (finished.parent === result) {
+            return finished
+          }
+        }).filter(present),
       )
     }
 
@@ -84,26 +88,46 @@ export class ConsoleFormatter extends Writable {
   }
 
   private _flush(result: Result, childResults: Result[]) {
-    const { logger } = this.options
+    const { logger, verbose } = this.options
 
     this.flushed.add(result.url.toString())
+    if (!verbose && this._isLeaf(result)) {
+      // don't print out any leaf node results.
+      return
+    }
+
+    const linkCount = result.links.length
+    const excludedCount = result.links.length - childResults.length
+    const brokenResults = childResults.filter((r) => r.status >= 400)
 
     const lines = [
       colorize(
         `${result.status.toFixed(0).padEnd(3)} ${result.method.padEnd(4)} ${result.url.toString()}`,
         result.status,
       ),
+      result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
+      chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} excluded. `) +
+        (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
     ]
-    lines.push(...childResults.map((r) =>
+    const resultsToPrint = verbose ? childResults : brokenResults
+    lines.push(...resultsToPrint.map((r) =>
       colorize(
         `\t${r.status.toFixed(0).padEnd(3)} ${r.method.padEnd(4)} ${r.url.toString()}`,
         r.status,
       ),
     ))
 
-    lines.splice(1, 0, '--------------------------------------------------------------------------------')
+    logger.log(lines.filter(present).join('\n') + '\n')
+  }
 
-    logger.log(lines.join('\n') + '\n')
+  /** The result is a leaf if none of the nodes has it as a parent */
+  private _isLeaf(result: Result): boolean {
+    for (const value of this.results.values()) {
+      if (value.parent && value.parent === result) {
+        return false
+      }
+    }
+    return true
   }
 }
 
