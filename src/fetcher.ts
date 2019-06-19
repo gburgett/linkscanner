@@ -79,12 +79,13 @@ export class Fetcher extends ParallelTransform {
     await this._fetch(chunk)
   }
 
-  private async _fetch({ url, parent, leaf }: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
+  private async _fetch(chunk: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
+    const { url, parent, leaf } = chunk
     const { followRedirects, logger } = {
       logger: defaultLogger,
       ...this.options,
     }
-    method = method || leaf ? 'HEAD' : 'GET'
+    method = method || (leaf ? 'HEAD' : 'GET')
 
     const { fetch, Request } = this.options.fetch
     const request = new Request(url.toString(), {
@@ -132,7 +133,6 @@ export class Fetcher extends ParallelTransform {
     const fullResult: Result = Object.assign(partialResult, {
       ms: end - start,
     })
-    this.push(fullResult)
 
     if (followRedirects && [301, 302].includes(response.status)) {
       // single redirect
@@ -146,7 +146,7 @@ export class Fetcher extends ParallelTransform {
           return
         }
 
-        await this._fetch({ url: parsedLocation, parent })
+        await this._fetch({ ...chunk, url: parsedLocation })
       }
     } else if (response.status == 405 && method == 'HEAD') {
       /*
@@ -154,7 +154,9 @@ export class Fetcher extends ParallelTransform {
        * 405 "Method Not Allowed" error will be re-requested using a 'get' method before deciding that it is broken.
        * This is only relevant if the requestMethod option is set to 'head'.
        */
-      await this._fetch({ url, parent }, 'GET')
+      await this._fetch(chunk, 'GET')
+    } else {
+      this.push(fullResult)
     }
   }
 }

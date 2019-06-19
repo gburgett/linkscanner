@@ -60,4 +60,24 @@ describe('Fetcher', () => {
     const call = fetchMockSandbox.lastCall(/other\.com/)!
     expect(call[1]!.method).to.eq('HEAD')
   })
+
+  it('retries as a GET when the HEAD response is 405', async () => {
+    const uut = instance()
+
+    fetchMockSandbox.headOnce('http://other.com', 405)
+    fetchMockSandbox.getOnce('http://other.com', 200)
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    expect(result[0].status).to.eq(200)
+    expect(result[0].host).to.eq('other.com')
+    expect(result[0].url.toString()).to.eq('http://other.com/')
+
+    const calls = fetchMockSandbox.calls(/other\.com/)!
+    expect(calls[0][1]!.method).to.eq('HEAD')
+    expect(calls[1][1]!.method).to.eq('GET')
+  })
 })
