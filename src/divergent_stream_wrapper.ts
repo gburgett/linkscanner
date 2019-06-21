@@ -1,7 +1,7 @@
 import { Semaphore } from 'async-toolbox'
 import {onceAsync} from 'async-toolbox/events'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
-import { Duplex } from 'stream'
+import { Duplex, PassThrough } from 'stream'
 
 type HashChunk = (chunk: any) => string | string[] | ALL
 type CreateStream<T extends Duplex> = (hash: string) => T
@@ -30,6 +30,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
   private readonly _streams: Map<string, Duplex>
   private readonly _createStreamOptions: CreateStreamOptions
   private readonly _eventNames = new Set<string | symbol>()
+  private readonly _passThrough: PassThrough
 
   constructor(options: DivergentStreamWrapperOptions<T>) {
     super({
@@ -51,6 +52,9 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     if (createStream) {
       this._createStream = createStream
     }
+
+    this._passThrough = new PassThrough({objectMode: true})
+    this._registerNewStream(this._passThrough)
   }
 
   public async _transformAsync(chunk: any) {
@@ -113,6 +117,11 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     let hashes = this._hashChunk(chunk)
     if (isALL(hashes)) {
       hashes = Array.from(this._streams.keys())
+
+      if (hashes.length == 0) {
+        // we haven't opened any streams yet.  Just pipe through a pass-through stream.
+        return [this._passThrough]
+      }
     } else if (!Array.isArray(hashes)) {
       hashes = [hashes]
     }
@@ -129,13 +138,19 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
       })
 
       this._streams.set(hash, innerStream)
-      innerStream.on('data', (transformedChunk) => this.push(transformedChunk))
-      innerStream.on('error', (err) => this.emit('error', err))
-      innerStream.on('end', () => {
-        this._streams.delete(hash)
-      })
+      this._registerNewStream(innerStream, hash)
       return innerStream
     })
+  }
+
+  private _registerNewStream(stream: Duplex, hash?: string) {
+    stream.on('data', (transformedChunk) => this.push(transformedChunk))
+    stream.on('error', (err) => this.emit('error', err))
+    if (hash) {
+      stream.on('end', () => {
+        this._streams.delete(hash)
+      })
+    }
   }
 
   private _createStream(hash: string): Duplex {
