@@ -49,7 +49,9 @@ export function BuildStream(
       logger,
     },
   )
-  const reentry = new Reentry()
+  const reentry = new Reentry({
+    logger,
+  })
 
   const sourceUrls = new Set<string>()
   const sourceUrlTracker = new Transform({
@@ -79,6 +81,7 @@ export function BuildStream(
 
         done()
       } catch (ex) {
+        logger.error('source URL tracking error', ex)
         done(ex)
       }
     },
@@ -104,6 +107,7 @@ export function BuildStream(
     .pipe(handleEOF(reentry))
 
   source.on('end', () => {
+    logger.debug('end of source')
     reentry.tryEnd()
   })
   fetcher.on('url', ({ url, parent }: { url: URL, parent: Result }) => {

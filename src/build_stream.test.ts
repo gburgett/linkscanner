@@ -24,7 +24,7 @@ describe('BuildStream', () => {
   })
 
   it('fetches a single URL', async () => {
-    fetchMockSandbox.getOnce('http://test.com/testpage',
+    fetchMockSandbox.get('http://test.com/testpage',
       {
         status: 200,
         headers: {
@@ -46,7 +46,7 @@ describe('BuildStream', () => {
   })
 
   it('recurses into other URLs found on page', async () => {
-    fetchMockSandbox.getOnce('http://test.com/testpage',
+    fetchMockSandbox.get('http://test.com/testpage',
       {
         status: 200,
         headers: {
@@ -71,7 +71,7 @@ describe('BuildStream', () => {
   })
 
   it('deep recurses for same host', async () => {
-    fetchMockSandbox.getOnce('http://test.com/testpage/',
+    fetchMockSandbox.get('http://test.com/testpage/',
       {
         status: 200,
         headers: {
@@ -112,7 +112,7 @@ describe('BuildStream', () => {
   })
 
   it('does not deep recurse when recursive: false', async () => {
-    fetchMockSandbox.getOnce('http://test.com/testpage/',
+    fetchMockSandbox.get('http://test.com/testpage/',
       {
         status: 200,
         headers: {

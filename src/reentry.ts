@@ -1,22 +1,36 @@
 import { Writable } from 'async-toolbox/stream'
 import { Transform, TransformCallback, TransformOptions } from 'stream'
+import { defaultLogger, Logger } from './logger'
 import { Chunk } from './model'
 import { parseUrl, URL } from './url'
+import { Options } from './util'
 
 export interface ReentryOptions extends TransformOptions {
-  objectMode?: true
+  objectMode: true
+
+  logger: Logger
 }
 
 export class Reentry extends Transform {
-  private readonly _checked = new Map<string, Chunk>()
-  private counter = 0
+  private readonly _checked: Map<string, Chunk>
+  private counter: number
+  private readonly _options: ReentryOptions
 
-  constructor(readonly options?: Partial<ReentryOptions>) {
-    super(Object.assign({},
+  constructor(options?: Options<ReentryOptions>) {
+    const opts: ReentryOptions = Object.assign(
+      {
+        logger: defaultLogger,
+      },
       options,
       {
-      objectMode: true,
-    }))
+        objectMode: true,
+      })
+    super(opts)
+
+    this._options = opts
+
+    this._checked = new Map<string, Chunk>()
+    this.counter = 0
   }
 
   public _transform(chunk: Chunk | string | URL | EOF, encoding: any, cb: TransformCallback): void {
@@ -24,8 +38,10 @@ export class Reentry extends Transform {
       cb()
       if (this.counter > chunk.counter) {
         // more have been pushed - try end again
+        this._options.logger.debug(`new chunks since last EOF: ${this.counter - chunk.counter}`)
         this.tryEnd()
       } else {
+        this._options.logger.debug(`end at ${chunk.counter}`)
         this.end()
       }
       return
@@ -42,6 +58,7 @@ export class Reentry extends Transform {
   }
 
   public tryEnd() {
+    this._options.logger.debug(`try end at ${this.counter}`)
     this.push(new EOF(this.counter))
   }
 
