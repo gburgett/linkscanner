@@ -3,6 +3,7 @@ import * as crossFetch from 'cross-fetch'
 import fetchMock from 'fetch-mock'
 import { } from 'mocha'
 
+import { wait } from 'async-toolbox'
 import { collect } from 'async-toolbox/stream'
 import { Fetcher, FetchOptions } from './fetcher'
 import { ErrorReason, ErrorResult, Result } from './model'
@@ -25,9 +26,10 @@ describe('Fetcher', () => {
       }
     })
 
-  const instance = () =>
+  const instance = (additionalOptions?: Partial<FetchOptions>) =>
     new Fetcher({
       ...options,
+      ...additionalOptions,
     })
 
   it('gets a result from a page', async () => {
@@ -95,6 +97,29 @@ describe('Fetcher', () => {
 
     const r0 = result[0] as ErrorResult
     expect(r0.status).to.be.undefined
+    expect(r0.reason).to.eq('error')
+    expect(r0.host).to.eq('other.com')
+    expect(r0.url.toString()).to.eq('http://other.com/')
+  })
+
+  it('pushes a timeout result', async () => {
+    const uut = instance({
+      timeout: 1,
+    })
+
+    fetchMockSandbox.getOnce('http://other.com', async () => {
+      await wait(10)
+      return 200
+    })
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com') })
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    const r0 = result[0] as ErrorResult
+    expect(r0.status).to.be.undefined
+    expect(r0.reason).to.eq('timeout')
     expect(r0.host).to.eq('other.com')
     expect(r0.url.toString()).to.eq('http://other.com/')
   })

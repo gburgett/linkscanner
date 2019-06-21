@@ -9,7 +9,7 @@ import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
-import { assign, Options } from './util'
+import { assign, isomorphicPerformance, Options, timeout, TimeoutError } from './util'
 
 export interface Parser {
   parse(response: Response, request: Request, push: (result: URL) => void): Promise<void>
@@ -34,18 +34,12 @@ export interface FetchOptions extends ParallelTransformOptions {
 
   acceptMimeTypes: string[]
   followRedirects: boolean
+  timeout: number
 
   parsers: Parsers
   logger: Logger
   fetch: FetchInterface
 }
-
-const isomorphicPerformance = typeof (performance) != 'undefined' ?
-  performance :
-  // we only get here in nodejs.  Use eval to confuse webpack so it doesn't import
-  // the perf_hooks package.
-  // tslint:disable-next-line:no-eval
-  eval('require')('perf_hooks').performance
 
 export class Fetcher extends ParallelTransform {
   private readonly options: FetchOptions
@@ -55,6 +49,7 @@ export class Fetcher extends ParallelTransform {
       {
         logger: defaultLogger,
         followRedirects: false,
+        timeout: 30000,
         parsers: defaultParsers,
         acceptMimeTypes: ['text/html', 'application/json'],
         // default to the global fetch
@@ -107,13 +102,13 @@ export class Fetcher extends ParallelTransform {
 
     let response: Response
     try {
-      response = await fetch(request)
+      response = await timeout(() => fetch(request), this.options.timeout)
     } catch (ex) {
       const errorResult: ErrorResult = {
         ...partialResult,
         leaf: true,
         status: undefined,
-        reason: 'error',
+        reason: ex instanceof TimeoutError ? 'timeout' : 'error',
         error: typeof ex == 'string' ? new Error(ex) : ex,
       }
       this.push(errorResult)
@@ -172,24 +167,5 @@ export class Fetcher extends ParallelTransform {
     } else {
       this.push(fullResult)
     }
-  }
-
-  private async _execute(request: Request) {
-    try {
-      return await fetch(request)
-    } catch (ex) {
-      return ex as Error
-    }
-  }
-}
-
-function createResult(req: Request, resp: Response) {
-  const rawUrl = resp.url && resp.url.length > 0 ? resp.url : req.url
-  const url = parseUrl(rawUrl)
-  return {
-    method: req.method,
-    url,
-    host: url.hostname,
-    status: resp.status,
   }
 }
