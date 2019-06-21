@@ -45,16 +45,7 @@ export class ConsoleFormatter extends Writable {
         result.links.map((link) => {
           const finished = this.results.get(link.toString())
           if (!finished) {
-            // create a fake "unfinished" result.
-            return {
-              method: '',
-              links: [],
-              ms: 0,
-              parent: result,
-              status: 0,
-              host: link.hostname,
-              url: link,
-            }
+            return null
           }
 
           if (finished.parent === result) {
@@ -113,7 +104,7 @@ export class ConsoleFormatter extends Writable {
       ),
       result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
       linkCount > 0 &&
-        chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} excluded. `) +
+        chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} not checked. `) +
           (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
     ]
     const resultsToPrint = verbose ? childResults : brokenResults.concat(redirectResults)

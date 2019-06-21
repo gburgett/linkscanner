@@ -23,7 +23,7 @@ describe('ConsoleFormatter', () => {
       host: 'www.test.com',
       status: 200,
       ms: 123,
-      links: [],
+      links: [parseUrl('http://www.test.com/asdf')],
     } as Result)
     instance.end()
 
@@ -33,7 +33,8 @@ describe('ConsoleFormatter', () => {
     expect(messages[0]).to.include('200')
     expect(messages[0]).to.include('GET')
     expect(messages[0]).to.include('http://www.test.com')
-    expect(messages[0]).to.include('0 links found')
+    expect(messages[0]).to.include('1 links found')
+    expect(messages[0]).to.include('1 not checked')
     expect(messages[0]).to.include('0 broken')
   })
 
