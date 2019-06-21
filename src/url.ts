@@ -18,10 +18,13 @@ export function parseUrls(): Transform<string, URL> {
     objectMode: true,
     transform(strChunk, encoding, done) {
       try {
-        this.push(parseUrl(strChunk))
+        // skip whitespace lines
+        if (/\S/.test(strChunk)) {
+          this.push(parseUrl(strChunk))
+        }
         done()
       } catch (ex) {
-        done(ex)
+        done(new Error(`Unable to parse URL '${strChunk}'\n\t${ex}`))
       }
     },
   })
