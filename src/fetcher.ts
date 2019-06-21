@@ -4,7 +4,7 @@ import { ReadLock } from 'async-toolbox'
 import * as crossFetch from 'cross-fetch'
 import 'cross-fetch/polyfill'
 import { defaultLogger, Logger } from './logger'
-import { Chunk, Result } from './model'
+import { Chunk, ErrorResult, Result } from './model'
 import { CheerioParser } from './parsers/cheerio-parser'
 import { RegexpParser } from './parsers/regexp-parser'
 import { EOF, isEOF } from './reentry'
@@ -81,10 +81,7 @@ export class Fetcher extends ParallelTransform {
 
   private async _fetch(chunk: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
     const { url, parent, leaf } = chunk
-    const { followRedirects, logger } = {
-      logger: defaultLogger,
-      ...this.options,
-    }
+    const { followRedirects, logger } = this.options
     method = method || (leaf ? 'HEAD' : 'GET')
 
     const { fetch, Request } = this.options.fetch
@@ -96,10 +93,32 @@ export class Fetcher extends ParallelTransform {
       redirect: 'manual',
     })
 
+    const partialResult = {
+      parent,
+      leaf,
+      links: [] as URL[],
+      method: request.method,
+      url,
+      host: url.hostname,
+    }
+
     logger.debug(`${request.method} ${request.url}`)
     const start = isomorphicPerformance.now()
 
-    const response = await fetch(request)
+    let response: Response
+    try {
+      response = await fetch(request)
+    } catch (ex) {
+      const errorResult: ErrorResult = {
+        ...partialResult,
+        leaf: true,
+        status: undefined,
+        reason: 'error',
+        error: typeof ex == 'string' ? new Error(ex) : ex,
+      }
+      this.push(errorResult)
+      return
+    }
 
     let contentType = response.headers.get('content-type')
     if (contentType) {
@@ -110,15 +129,9 @@ export class Fetcher extends ParallelTransform {
       this.options.parsers.default ||
       new RegexpParser()
 
-    const partialResult = {
-      parent,
-      leaf,
-      ...createResult(request, response),
-      links: [] as URL[],
-    }
     logger.debug(`${request.method} ${request.url} ${response.status}`)
 
-    if (partialResult.status >= 200 && partialResult.status < 300) {
+    if (response.status >= 200 && response.status < 300) {
       await parser.parse(response, request, (u) => {
         partialResult.links.push(u)
         this.emit('url', {
@@ -131,6 +144,7 @@ export class Fetcher extends ParallelTransform {
 
     // Assign back to the same object, so that the emitted object tree is maintained.
     const fullResult: Result = Object.assign(partialResult, {
+      status: response.status,
       ms: end - start,
     })
 
@@ -157,6 +171,14 @@ export class Fetcher extends ParallelTransform {
       await this._fetch(chunk, 'GET')
     } else {
       this.push(fullResult)
+    }
+  }
+
+  private async _execute(request: Request) {
+    try {
+      return await fetch(request)
+    } catch (ex) {
+      return ex as Error
     }
   }
 }

@@ -27,7 +27,7 @@ export type ErrorReason =
 export interface ErrorResult extends ResultCommon {
   status: undefined
   reason: ErrorReason
-  error: string
+  error: Error
   leaf: true
 }
 

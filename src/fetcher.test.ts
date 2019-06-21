@@ -5,8 +5,10 @@ import { } from 'mocha'
 
 import { collect } from 'async-toolbox/stream'
 import { Fetcher, FetchOptions } from './fetcher'
-import { Result } from './model'
+import { ErrorReason, ErrorResult, Result } from './model'
 import { parseUrl } from './url'
+
+// tslint:disable:no-unused-expression
 
 describe('Fetcher', () => {
   let options: Partial<FetchOptions>
@@ -79,5 +81,21 @@ describe('Fetcher', () => {
     const calls = fetchMockSandbox.calls(/other\.com/)!
     expect(calls[0][1]!.method).to.eq('HEAD')
     expect(calls[1][1]!.method).to.eq('GET')
+  })
+
+  it('pushes an error result when fetch throws', async () => {
+    const uut = instance()
+
+    fetchMockSandbox.getOnce('http://other.com', () => { throw new Error(`test error!`) })
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com') })
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    const r0 = result[0] as ErrorResult
+    expect(r0.status).to.be.undefined
+    expect(r0.host).to.eq('other.com')
+    expect(r0.url.toString()).to.eq('http://other.com/')
   })
 })
