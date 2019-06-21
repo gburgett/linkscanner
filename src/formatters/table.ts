@@ -28,12 +28,12 @@ export class TableFormatter extends Writable {
     const { logger, verbose } = this.options
 
     const line = [
-      result.status.toFixed(0),
+      result.status && result.status.toFixed(0),
       result.method.padEnd(4),
       result.url.toString().padEnd(80),
-      result.ms.toFixed(0).padStart(4),
-      result.parent ? result.parent.url.toString() : '',
-    ]
+      'ms' in result && result.ms.toFixed(0).padStart(4),
+      result.parent && result.parent.url.toString(),
+    ].map((l) => l || '')
 
     if (verbose) {
       if (!this.wroteHeader) {

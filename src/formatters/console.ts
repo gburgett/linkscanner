@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { Result } from '../model'
+import { isErrorResult, isSuccessResult, Result } from '../model'
 import { assign, Options, present } from '../util'
 
 export interface ConsoleFormatterOptions {
@@ -41,18 +41,22 @@ export class ConsoleFormatter extends Writable {
         continue
       }
 
-      this._flush(result,
-        result.links.map((link) => {
-          const finished = this.results.get(link.toString())
-          if (!finished) {
-            return null
-          }
+      if (isSuccessResult(result)) {
+        this._flush(result,
+          result.links.map((link) => {
+            const finished = this.results.get(link.toString())
+            if (!finished) {
+              return null
+            }
 
-          if (finished.parent === result) {
-            return finished
-          }
-        }).filter(present),
-      )
+            if (finished.parent === result) {
+              return finished
+            }
+          }).filter(present),
+        )
+      } else {
+        this._flush(result, [])
+      }
     }
 
     cb()
@@ -63,18 +67,25 @@ export class ConsoleFormatter extends Writable {
       return
     }
 
-    if (!result.parent || this.flushed.has(result.parent.url.toString())) {
-      // we can maybe flush this one cause we flushed the parent.
-      const childResults = result.links.map((link) => this.results.get(link.toString()))
-        .filter(present)
-
-      // Flush only if all the child links have a result
-      if (childResults.length == result.links.length) {
-        this._flush(result, childResults)
-        childResults.forEach((child) => this._tryFlush(child))
-      }
-    } else {
+    if (result.parent && !this.flushed.has(result.parent.url.toString())) {
       this._tryFlush(result.parent)
+      return
+    }
+
+    // we've flushed the parent, so now if it's a leaf node we can flush it.
+    if (result.leaf) {
+      this._flush(result, [])
+      return
+    }
+
+    // we can maybe flush this one cause we flushed the parent.
+    const childResults = result.links.map((link) => this.results.get(link.toString()))
+      .filter(present)
+
+    // Flush only if all the child links have a result
+    if (childResults.length == result.links.length) {
+      this._flush(result, childResults)
+      childResults.forEach((child) => this._tryFlush(child))
     }
   }
 
@@ -94,8 +105,8 @@ export class ConsoleFormatter extends Writable {
 
     const linkCount = result.links.length
     const excludedCount = result.links.length - childResults.length
-    const brokenResults = childResults.filter((r) => r.status >= 400)
-    const redirectResults = childResults.filter((r) => r.status >= 300 && r.status < 400)
+    const brokenResults = childResults.filter((r) => !r.status || r.status >= 400)
+    const redirectResults = childResults.filter((r) => r.status && r.status >= 300 && r.status < 400)
 
     const lines = [
       colorize(
@@ -110,7 +121,7 @@ export class ConsoleFormatter extends Writable {
     const resultsToPrint = verbose ? childResults : brokenResults.concat(redirectResults)
     lines.push(...resultsToPrint.map((r) =>
       colorize(
-        `\t${r.status.toFixed(0).padEnd(3)} ${r.method.padEnd(4)} ${r.url.toString()}`,
+        `\t${r.status ? r.status.toFixed(0).padEnd(3) : '   '} ${r.method.padEnd(4)} ${r.url.toString()}`,
         r.status,
       ),
     ))
@@ -119,8 +130,8 @@ export class ConsoleFormatter extends Writable {
   }
 }
 
-function colorize(text: string, status: number) {
-  if (status == 0) {
+function colorize(text: string, status?: number) {
+  if (!status || status == 0) {
     return chalk.red(text)
   }
   if (status < 200) {
