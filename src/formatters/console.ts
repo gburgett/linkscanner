@@ -36,7 +36,7 @@ export class ConsoleFormatter extends Writable {
   }
 
   public _final(cb: (error?: Error | null) => void) {
-    for (const [url, result] of this.results.entries()) {
+    for (const [url, result] of Array.from(this.results.entries())) {
       if (this.flushed.has(url)) {
         continue
       }
