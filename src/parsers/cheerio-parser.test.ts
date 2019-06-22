@@ -31,6 +31,24 @@ describe('CheerioParser', () => {
     expect(results[18].toString()).to.eq('https://google.com/intl/en/policies/terms/')
   })
 
+  it('finds canonical link', async () => {
+    const parser = new CheerioParser()
+
+    const req = new Request('https://google.com')
+    const resp = new Response(`
+    <html>
+      <head>
+      <link rel="canonical" href="https://www.google.com/canonical">
+      </head>
+    </html>
+    `)
+    const results: URL[] = []
+    await parser.parse(resp, req, (result) => results.push(result))
+
+    expect(results.length).to.eq(1)
+    expect(results[0].toString()).to.eq('https://www.google.com/canonical')
+  })
+
   it('respects base element', async () => {
     const parser = new CheerioParser()
 

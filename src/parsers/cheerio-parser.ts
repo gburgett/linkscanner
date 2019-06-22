@@ -16,7 +16,15 @@ export class CheerioParser {
     }
 
     $('a[href]').each((index, anchorTag) => {
-      const href = $(anchorTag).attr('href')
+      parseAttr(anchorTag)
+    })
+
+    $('link[rel="canonical"]').each((index, link) => {
+      parseAttr(link)
+    })
+
+    function parseAttr(element: CheerioElement, attr = 'href'): void {
+      const href = $(element).attr(attr)
       if (href) {
         try {
           const url = parseUrl(href, baseUrl)
@@ -27,6 +35,6 @@ export class CheerioParser {
           // ignore
         }
       }
-    })
+    }
   }
 }
