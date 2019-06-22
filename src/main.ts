@@ -27,6 +27,12 @@ const argv = yargs
   .option('formatter', {
     alias: 'f',
     choices: ['table'] as const,
+  })
+  .option('include', {
+    alias: 'i',
+    array: true,
+    type: 'string',
+    choices: ['a', 'link', 'img', 'script', 'form', 'iframe', 'all'],
   }).argv
 
 const defaults = {

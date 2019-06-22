@@ -10,7 +10,7 @@ export interface Logger {
 export const defaultLogger = {
   log: console.log,
   // tslint:disable-next-line:no-empty
-  debug: () => {},
+  debug: (...args: any[]) => {},
   error: console.error,
 }
 

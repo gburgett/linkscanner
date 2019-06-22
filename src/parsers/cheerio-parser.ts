@@ -7,6 +7,16 @@ import { Result } from '../model'
 import { parseUrl, URL } from '../url'
 import { assign, Options } from '../util'
 
+const allSelectors = [
+  'a[href]',
+  'link[rel="canonical"]',
+  'link[rel="stylesheet"]',
+  'img',
+  'script[src]',
+  'iframe',
+  'form',
+]
+
 export class CheerioParser {
   private readonly _options: ParserOptions
 
@@ -21,6 +31,10 @@ export class CheerioParser {
       },
       options,
     )
+
+    if (this._options.include.includes('all')) {
+      this._options.include = allSelectors
+    }
   }
 
   public async parse(response: Response, request: Request, push: (urls: URL) => void): Promise<void> {
@@ -37,7 +51,7 @@ export class CheerioParser {
 
     this._options.include.forEach((selector) => {
       $(selector).each((index, anchorTag) => {
-        parseAttr(anchorTag, 'href', 'src')
+        parseAttr(anchorTag, 'href', 'src', 'action')
       })
     })
 
@@ -59,13 +73,13 @@ export class CheerioParser {
             }
           } catch (ex) {
             // ignore
-            logger.debug(`bad href: '${href}' (${element.toString()})`)
+            logger.debug(`bad href: '${href}' (${$elem.toString()})`)
           }
         }
       })
 
       if (!foundOne) {
-        logger.debug(`no valid link elements found on attribute ${element.toString()}`)
+        logger.debug(`no valid link elements found on attribute ${$elem.toString()}`)
       }
     }
   }

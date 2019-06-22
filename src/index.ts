@@ -31,6 +31,7 @@ export interface Args {
   followRedirects?: boolean
   recursive?: boolean
   'exclude-external'?: boolean
+  include?: string[]
 
   formatter?: keyof typeof formatters | Writable
   /** Formatter option: more output */

@@ -106,6 +106,87 @@ describe('CheerioParser', () => {
     expect(results.length).to.eq(1)
     expect(results[0].toString()).to.eq('https://images.ctfassets.net/asdf.png')
   })
+
+  it('ignores css & images with default options', async () => {
+    const parser = new CheerioParser()
+
+    const req = new Request('https://google.com')
+    const resp = new Response(`
+      <html>
+        <head>
+          <link rel="stylesheet" media="all" href="/assets/application.css">
+        </head>
+        <body>
+          <img src="//images.ctfassets.net/test.jpg?w=1440">
+          <script src="/js/application.js"></script>
+        </body>
+      </html>
+      `)
+    const results: URL[] = []
+    await parser.parse(resp, req, (result) => results.push(result))
+
+    expect(results.length).to.eq(0)
+  })
+
+  it('includes css & images with "all" option', async () => {
+    const parser = new CheerioParser({
+      include: ['all'],
+    })
+
+    const req = new Request('https://google.com')
+    const resp = new Response(`
+      <html>
+        <head>
+          <link rel="stylesheet" media="all" href="/assets/application.css">
+        </head>
+        <body>
+          <img src="//images.ctfassets.net/test.jpg?w=1440">
+          <script src="/js/application.js"></script>
+        </body>
+      </html>
+      `)
+    const results: URL[] = []
+    await parser.parse(resp, req, (result) => results.push(result))
+
+    expect(results.length).to.eq(3)
+    expect(results[0].toString()).to.eq('https://google.com/assets/application.css')
+    expect(results[1].toString()).to.eq('https://images.ctfassets.net/test.jpg?w=1440')
+    expect(results[2].toString()).to.eq('https://google.com/js/application.js')
+  })
+
+  it('includes all elements whenever selector given', async () => {
+    const parser = new CheerioParser({
+      include: ['a', 'link', 'img', 'script', 'form', 'iframe'],
+    })
+
+    const req = new Request('https://google.com')
+    const resp = new Response(`
+      <html>
+        <head>
+          <link rel="canonical" href="https://www.google.com/canonical">
+          <link rel="stylesheet" media="all" href="/assets/application.css">
+        </head>
+        <body>
+          <a href="/other">Clickable</a>
+          <img src="//images.ctfassets.net/test.jpg?w=1440">
+          <script src="/js/application.js"></script>
+          <form action="/post-me"></form>
+          <iframe src="http://some-iframe.test.com"></iframe>
+        </body>
+      </html>
+      `)
+    const results: URL[] = []
+    await parser.parse(resp, req, (result) => results.push(result))
+
+    expect(results.length).to.eq(7)
+    expect(results[0].toString()).to.eq('https://google.com/other')
+    expect(results[1].toString()).to.eq('https://www.google.com/canonical')
+    expect(results[2].toString()).to.eq('https://google.com/assets/application.css')
+    expect(results[3].toString()).to.eq('https://images.ctfassets.net/test.jpg?w=1440')
+    expect(results[4].toString()).to.eq('https://google.com/js/application.js')
+    expect(results[5].toString()).to.eq('https://google.com/post-me')
+    expect(results[6].toString()).to.eq('http://some-iframe.test.com/')
+  })
 })
 
 // tslint:disable:max-line-length
