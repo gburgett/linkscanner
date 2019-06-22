@@ -1,11 +1,27 @@
 import cheerio from 'cheerio'
 import { Request, Response } from 'cross-fetch'
 
+import { ParserOptions } from '.'
+import { defaultLogger } from '../logger'
 import { Result } from '../model'
 import { parseUrl, URL } from '../url'
+import { assign, Options } from '../util'
 
 export class CheerioParser {
+  private readonly _options: ParserOptions
+
+  constructor(options?: Options<ParserOptions>) {
+    this._options = assign(
+      {
+        logger: defaultLogger,
+      },
+      options,
+    )
+  }
+
   public async parse(response: Response, request: Request, push: (urls: URL) => void): Promise<void> {
+    const { logger } = this._options
+
     const text = await response.text()
     const $ = cheerio.load(text)
 
@@ -33,6 +49,7 @@ export class CheerioParser {
           }
         } catch (ex) {
           // ignore
+          logger.debug(`bad href: '${href}' (${element.toString()})`)
         }
       }
     }

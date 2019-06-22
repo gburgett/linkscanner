@@ -3,26 +3,13 @@ require('es6-promise/auto')
 import { ReadLock } from 'async-toolbox'
 import * as crossFetch from 'cross-fetch'
 import 'cross-fetch/polyfill'
+
 import { defaultLogger, Logger } from './logger'
 import { Chunk, ErrorResult, Result } from './model'
-import { CheerioParser } from './parsers/cheerio-parser'
-import { RegexpParser } from './parsers/regexp-parser'
+import { defaultParsers, Parsers } from './parsers'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
 import { assign, isomorphicPerformance, Options, timeout, TimeoutError } from './util'
-
-export interface Parser {
-  parse(response: Response, request: Request, push: (result: URL) => void): Promise<void>
-}
-
-interface Parsers {
-  [mimeType: string]: Parser
-}
-
-const defaultParsers: Parsers = {
-  'default': new RegexpParser(),
-  'text/html': new CheerioParser(),
-}
 
 export interface FetchInterface {
   fetch: (input: Request) => Promise<Response>,
@@ -50,7 +37,7 @@ export class Fetcher extends ParallelTransform {
         logger: defaultLogger,
         followRedirects: false,
         timeout: 30000,
-        parsers: defaultParsers,
+        parsers: defaultParsers(options),
         acceptMimeTypes: ['text/html', 'application/json'],
         // default to the global fetch
         fetch: crossFetch,
@@ -122,7 +109,7 @@ export class Fetcher extends ParallelTransform {
     }
     const parser = this.options.parsers[contentType || 'default'] ||
       this.options.parsers.default ||
-      new RegexpParser()
+      defaultParsers(this.options).default
 
     logger.debug(`${request.method} ${request.url} ${response.status}`)
 
