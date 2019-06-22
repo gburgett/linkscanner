@@ -14,6 +14,10 @@ export class CheerioParser {
     this._options = assign(
       {
         logger: defaultLogger,
+        include: [
+          'a[href]',
+          'link[rel="canonical"]',
+        ],
       },
       options,
     )
@@ -31,26 +35,37 @@ export class CheerioParser {
       baseUrl = parseUrl(baseElement.attr('href'), response.url || request.url).toString()
     }
 
-    $('a[href]').each((index, anchorTag) => {
-      parseAttr(anchorTag)
+    this._options.include.forEach((selector) => {
+      $(selector).each((index, anchorTag) => {
+        parseAttr(anchorTag, 'href', 'src')
+      })
     })
 
-    $('link[rel="canonical"]').each((index, link) => {
-      parseAttr(link)
-    })
+    function parseAttr(element: CheerioElement, ...attrs: string[]): void {
+      if (attrs.length == 0) {
+        throw new Error(`no attrs given to select`)
+      }
 
-    function parseAttr(element: CheerioElement, attr = 'href'): void {
-      const href = $(element).attr(attr)
-      if (href) {
-        try {
-          const url = parseUrl(href, baseUrl)
-          if (['http:', 'https:'].includes(url.protocol)) {
-            push(url)
+      let foundOne = false
+      const $elem = $(element)
+      attrs.forEach((attr) => {
+        const href = $elem.attr(attr)
+        if (href) {
+          try {
+            const url = parseUrl(href, baseUrl)
+            if (['http:', 'https:'].includes(url.protocol)) {
+              push(url)
+              foundOne = true
+            }
+          } catch (ex) {
+            // ignore
+            logger.debug(`bad href: '${href}' (${element.toString()})`)
           }
-        } catch (ex) {
-          // ignore
-          logger.debug(`bad href: '${href}' (${element.toString()})`)
         }
+      })
+
+      if (!foundOne) {
+        logger.debug(`no valid link elements found on attribute ${element.toString()}`)
       }
     }
   }

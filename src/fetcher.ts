@@ -6,7 +6,7 @@ import 'cross-fetch/polyfill'
 
 import { defaultLogger, Logger } from './logger'
 import { Chunk, ErrorResult, Result } from './model'
-import { defaultParsers, Parsers } from './parsers'
+import { defaultParsers, ParserOptions, Parsers } from './parsers'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
 import { assign, isomorphicPerformance, Options, timeout, TimeoutError } from './util'
@@ -31,7 +31,7 @@ export interface FetchOptions extends ParallelTransformOptions {
 export class Fetcher extends ParallelTransform {
   private readonly options: FetchOptions
 
-  constructor(options: Options<FetchOptions>) {
+  constructor(options: Options<FetchOptions & ParserOptions>) {
     const opts = assign(
       {
         logger: defaultLogger,

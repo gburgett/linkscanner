@@ -14,6 +14,16 @@ export interface Parsers {
 
 export interface ParserOptions {
   logger: Logger
+
+  /**
+   * What kinds of elements to include in the search.  For example,
+   * for HTML this can be `a,link[rel="stylesheet"],img,script,form,iframe`
+   * for JSON this could be a json path selector
+   * for CSS files the `img` value will cause background images to be checked
+   *
+   * `all` includes everything.
+   */
+  include: string[]
 }
 
 export const defaultParsers = (options?: Options<ParserOptions>) => ({

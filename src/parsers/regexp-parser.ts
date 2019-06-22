@@ -16,6 +16,7 @@ export class RegexpParser {
     this._options = assign(
       {
         logger: defaultLogger,
+        include: [],
       },
       options,
     )
