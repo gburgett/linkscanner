@@ -72,6 +72,7 @@ export function BuildStream(
         hostnameSet.hostnames.add(url.hostname)
       }
       sourceUrls.add(url.toString())
+      logger.debug('source URL', url.toString())
       this.push(url)
     },
   })
