@@ -138,11 +138,27 @@ export class Fetcher extends ParallelTransform {
         try {
           parsedLocation = parseUrl(location)
         } catch (ex) {
-          logger.error(`Error parsing redirect location from ${url.toString()} - ${location}`)
+          const error: ErrorResult = {
+            ...fullResult,
+            status: undefined,
+            leaf: true,
+            reason: 'error',
+            error: new Error(`${fullResult.status}: bad location header '${location}'`),
+          }
+          this.push(error)
           return
         }
 
         await this._fetch({ ...chunk, url: parsedLocation })
+      } else {
+        const error: ErrorResult = {
+          ...fullResult,
+          status: undefined,
+          leaf: true,
+          reason: 'error',
+          error: new Error(`${fullResult.status}: missing location header`),
+        }
+        this.push(error)
       }
     } else if (response.status == 405 && method == 'HEAD') {
       /*
