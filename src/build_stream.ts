@@ -52,6 +52,7 @@ export function BuildStream(
   const sourceUrls = new Set<string>()
   const sourceUrlTracker = new ParallelTransform({
     objectMode: true,
+    highWaterMark: 0,
     async transformAsync(url: URL) {
       // always correct the user's typed-in URL if it is redirected.
       const {fetch, Request} = options.fetch || crossFetch
