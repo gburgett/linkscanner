@@ -130,7 +130,7 @@ export class Fetcher extends ParallelTransform {
       ms: end - start,
     })
 
-    if (followRedirects && [301, 302].includes(response.status)) {
+    if (followRedirects && [301, 302, 307].includes(response.status)) {
       // single redirect
       const location = response.headers.get('Location')
       if (location) {
