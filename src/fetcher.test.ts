@@ -119,6 +119,7 @@ describe('Fetcher', () => {
 
     const r0 = result[0] as ErrorResult
     expect(r0.status).to.be.undefined
+    console.log('error', r0.error)
     expect(r0.reason).to.eq('timeout')
     expect(r0.host).to.eq('other.com')
     expect(r0.url.toString()).to.eq('http://other.com/')
