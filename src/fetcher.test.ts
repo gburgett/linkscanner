@@ -104,11 +104,11 @@ describe('Fetcher', () => {
 
   it('pushes a timeout result', async () => {
     const uut = instance({
-      timeout: 1,
+      timeout: 10,
     })
 
     fetchMockSandbox.getOnce('http://other.com', async () => {
-      await wait(10)
+      await wait(100)
       return 200
     })
 
