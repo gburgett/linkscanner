@@ -30,6 +30,25 @@ describe('RegexpParser', () => {
       'tx%3Futm_source%3Dgoogle%26utm_medium%3Dhp%26utm_campaign%3Dlaunch&amp;source=hpp&amp;id=19012225&amp;' +
       'ct=3&amp;usg=AFQjCNE1KJ_SvY3fYav4Fcu8Y5rwMZ-dGg&amp;sa=X&amp;ved=0ahUKEwiAyeb0t6PiAhVBX60KHXyuCcQQ8IcBCAU')
   })
+
+  it('handles sitemap URLs', async () => {
+    const parser = new RegexpParser()
+
+    const resp = new Response(`
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">http://www.google.com</loc>
+  </url>
+</urlset>`)
+    const results: URL[] = []
+    await parser.parse(resp, undefined as any, (result) => results.push(result))
+
+    expect(results.length).to.eq(3)
+    expect(results[0].toString()).to.eq('http://www.sitemaps.org/schemas/sitemap/0.9')
+    expect(results[2].toString()).to.eq('http://www.google.com/')
+
+  })
 })
 
 // tslint:disable:max-line-length
