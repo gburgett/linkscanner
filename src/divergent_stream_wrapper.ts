@@ -1,7 +1,7 @@
 import { ReadLock, Semaphore } from 'async-toolbox'
 import {onceAsync} from 'async-toolbox/events'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
-import { Duplex, PassThrough } from 'stream'
+import { Duplex } from 'stream'
 
 import { EOF, isEOF } from './reentry'
 
@@ -170,7 +170,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
 
 function isOverriddenEvent(event: string | symbol): boolean {
   return typeof(event) == 'string' &&
-    ['data', 'error', 'end'].includes(event)
+    ['data', 'error', 'end', 'unpipe', 'drain', 'close', 'finish'].includes(event)
 }
 
 function raiseNotImplemented(name: string) {

@@ -1165,10 +1165,10 @@ async-limiter@~1.0.0:
   resolved "https://registry.yarnpkg.com/async-limiter/-/async-limiter-1.0.0.tgz#78faed8c3d074ab81f22b4e985d79e8738f720f8"
   integrity sha512-jp/uFnooOiO+L211eZOoSyzpOITMXx1rBITauYykG3BRYPu8h0UcxsPNB04RR5vo4Tyz3+ay17tR6JVf9qzYWg==
 
-async-toolbox@^0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/async-toolbox/-/async-toolbox-0.4.1.tgz#d8e2285ef9182f620bdf2070241da75cae4c7ca7"
-  integrity sha512-mOWRY8akc73A7ZwauLB55MV4HC0YhZ0fXptILGmiZOY3Shm/U+VifEvSp0WNwEZx41ryf/bwGpFkR0D2fXLqFA==
+async-toolbox@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/async-toolbox/-/async-toolbox-0.4.2.tgz#a9c0220dc927f6b08c2cd0d18573eaed67922ae1"
+  integrity sha512-bwX5cnWTVkQ2Zgsth1bi2329g6LtcBsUnq50qTVC54PcNO0AFGYhud3sYKzLwfSpqpQ5hGG7qExYFsjbZnct8w==
   optionalDependencies:
     limiter "^1.1.4"
 

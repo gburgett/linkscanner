@@ -1,14 +1,11 @@
 import { expect } from 'chai'
-import * as crossFetch from 'cross-fetch'
-import fetchMock from 'fetch-mock'
 import { } from 'mocha'
 
 import { wait, waitUntil } from 'async-toolbox'
-import { collect, ParallelTransform } from 'async-toolbox/stream'
-import { Transform, TransformCallback } from 'stream'
+import {  ParallelTransform } from 'async-toolbox/stream'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { Chunk } from './model'
-import { EOF, isEOF } from './reentry'
+import { EOF } from './reentry'
 import { parseUrl } from './url'
 
 // tslint:disable:no-unused-expression
