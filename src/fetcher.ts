@@ -6,7 +6,7 @@ import 'cross-fetch/polyfill'
 
 import { defaultLogger, Logger } from './logger'
 import { Chunk, ErrorResult, Result } from './model'
-import { defaultParsers, ParserOptions, Parsers } from './parsers'
+import { defaultParsers, findParser, ParserOptions, Parsers } from './parsers'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
 import { assign, isomorphicPerformance, Options } from './util'
@@ -107,9 +107,7 @@ export class Fetcher extends ParallelTransform {
       // text/html; charset=utf-8
       contentType = contentType.split(';')[0]
     }
-    const parser = this.options.parsers[contentType || 'default'] ||
-      this.options.parsers.default ||
-      defaultParsers(this.options).default
+    const parser = findParser(this.options.parsers, contentType)
 
     logger.debug(`${request.method} ${request.url} ${response.status}`)
 

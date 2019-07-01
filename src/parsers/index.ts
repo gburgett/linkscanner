@@ -26,12 +26,40 @@ export interface ParserOptions {
   include: string[]
 }
 
+// tslint:disable-next-line: variable-name
+const NullParser: Parser = {
+  async parse() {
+    return
+  },
+}
+
 export const defaultParsers = (options?: Options<ParserOptions>) => ({
     'default': new RegexpParser(options),
     'text/html': new CheerioParser(options),
+    'text': new RegexpParser(options),
+    'video': NullParser,
+    'audio': NullParser,
+    'image': NullParser,
   })
+
+export function findParser(parsers: Parsers, mimeType: string | null): Parser {
+  mimeType = mimeType || 'default'
+  if (parsers[mimeType]) {
+    return parsers[mimeType]
+  }
+  const parts = mimeType.split('/')
+  while (parts.length > 0) {
+    parts.pop()
+    mimeType = parts.join('/')
+    if (parsers[mimeType]) {
+      return parsers[mimeType]
+    }
+  }
+  return parsers.default
+}
 
 export {
   CheerioParser,
   RegexpParser,
+  NullParser,
 }

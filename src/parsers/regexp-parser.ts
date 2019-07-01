@@ -8,7 +8,7 @@ import { parseUrl } from '../url'
 import { assign, Options } from '../util'
 
 export class RegexpParser {
-  public static readonly regexp = /(ftp|http|https):\/\/[^ "]+/g
+  public static readonly regexp = /(ftp|http|https):\/\/[^ "<]+/g
 
   private readonly _options: ParserOptions
 

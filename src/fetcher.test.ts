@@ -123,4 +123,31 @@ describe('Fetcher', () => {
     expect(r0.host).to.eq('other.com')
     expect(r0.url.toString()).to.eq('http://other.com/')
   })
+
+  it('does not attempt to scan a media item', async () => {
+    const uut = instance()
+
+    const resp = new Response('', {
+      status: 200,
+      statusText: 'ok',
+      headers: {
+        'content-type': 'video/avi',
+      },
+    })
+    Object.assign(resp, {
+      json: () => { throw new Error(`attempted to read json!`) },
+      text: () => { throw new Error(`attempted to read text!`) },
+      blob: () => { throw new Error(`attempted to read blob!`) },
+    })
+    fetchMockSandbox.getOnce('http://other.com/some-video', resp)
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com/some-video') })
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    expect(result[0].status).to.eq(200)
+    expect(result[0].host).to.eq('other.com')
+    expect(result[0].url.toString()).to.eq('http://other.com/some-video')
+  })
 })
