@@ -1,3 +1,6 @@
+import { Readable } from 'stream'
+
+import { Logger } from './logger'
 
 export type Options<T, Required extends keyof T = never> =
   {
@@ -43,3 +46,26 @@ export const isomorphicPerformance = typeof (performance) != 'undefined' ?
   // the perf_hooks package.
   // tslint:disable-next-line:no-eval
   eval('require')('perf_hooks').performance
+
+export function debugStreams(streams: { [stream: string]: Readable }, logger: Logger = console): NodeJS.Timeout {
+  const states: { [stream: string]: any } = {}
+
+  return setInterval(() => {
+    Object.keys(streams).forEach((name) => {
+      const stream = streams[name] as any
+      const state = states[name] || { flowing: false, ended: false }
+      if (state.flowing != stream._readableState.flowing) {
+        logger.debug(name, stream._readableState.flowing ? 'flowing' : 'NOT flowing')
+      }
+      if (state.ended != stream._readableState.ended) {
+        logger.debug(name, stream._readableState.ended ? 'ended' : 'NOT ended')
+      }
+      if (state.pipes != stream._readableState.pipes) {
+        logger.debug(name, stream._readableState.pipes ? 'piped to something' : 'UNPIPED!')
+      }
+      states[name] = {
+        ...stream._readableState,
+      }
+    })
+  }, 10)
+}

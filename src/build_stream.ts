@@ -6,7 +6,7 @@ import { FetchInterface } from './fetcher'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result } from './model'
-import { EOF, handleEOF, isEOF, Reentry } from './reentry'
+import { handleEOF, Reentry } from './reentry'
 import { parseUrl, parseUrls, URL } from './url'
 import { assign, Options } from './util'
 
@@ -134,6 +134,13 @@ export function BuildStream(
 
     reentry.write({ url, parent, leaf: isLeafNode })
   })
+
+  // debugStreams({
+  //   source,
+  //   reentry,
+  //   fetcher,
+  //   results,
+  // })
 
   // The CLI or consuming program needs the readable stream of results
   return results
