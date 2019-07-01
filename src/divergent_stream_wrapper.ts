@@ -1,9 +1,11 @@
-import { Semaphore } from 'async-toolbox'
+import { ReadLock, Semaphore } from 'async-toolbox'
 import {onceAsync} from 'async-toolbox/events'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 import { Duplex, PassThrough } from 'stream'
 
-type HashChunk = (chunk: any) => string | string[] | ALL
+import { EOF, isEOF } from './reentry'
+
+type HashChunk = (chunk: any) => string | string[]
 type CreateStream<T extends Duplex> = (hash: string) => T
 
 type CreateStreamOptions = ParallelTransformOptions & {
@@ -30,7 +32,6 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
   private readonly _streams: Map<string, Duplex>
   private readonly _createStreamOptions: CreateStreamOptions
   private readonly _eventNames = new Set<string | symbol>()
-  private readonly _passThrough: PassThrough
 
   constructor(options: DivergentStreamWrapperOptions<T>) {
     super({
@@ -52,12 +53,25 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     if (createStream) {
       this._createStream = createStream
     }
-
-    this._passThrough = new PassThrough({objectMode: true})
-    this._registerNewStream(this._passThrough)
   }
 
-  public async _transformAsync(chunk: any) {
+  public async _transformAsync(chunk: any | EOF, lock: ReadLock) {
+    if (isEOF(chunk)) {
+      if (this._streams.size == 0) {
+        // we haven't opened any streams yet.  Just pipe through a pass-through stream.
+        this.push(chunk)
+        return
+      }
+
+      // we're going to flush all streams before pushing the EOF.  This ensures
+      // all the currently in-progress fetches finish before the EOF gets passed
+      // along.  We can always recreate the streams later.
+      await lock.upgrade()
+      await this._flushAsync()
+      this.push(chunk)
+      return
+    }
+
     // Block until all our streams for this chunk can accept another chunk
     await Promise.all(
       this._streamsFor(chunk).map((stream) => stream.writeAsync(chunk)),
@@ -115,14 +129,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
 
   private _streamsFor(chunk: any): Duplex[] {
     let hashes = this._hashChunk(chunk)
-    if (isALL(hashes)) {
-      hashes = Array.from(this._streams.keys())
-
-      if (hashes.length == 0) {
-        // we haven't opened any streams yet.  Just pipe through a pass-through stream.
-        return [this._passThrough]
-      }
-    } else if (!Array.isArray(hashes)) {
+    if (!Array.isArray(hashes)) {
       hashes = [hashes]
     }
     return hashes.map((hash) => {
@@ -159,12 +166,6 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
       semaphore: this._createStreamOptions.semaphore ? this._createStreamOptions.semaphore(hash) : undefined,
     })
   }
-}
-
-export type ALL = typeof DivergentStreamWrapper.ALL
-
-export function isALL(chunk: any): chunk is ALL {
-  return chunk == DivergentStreamWrapper.ALL
 }
 
 function isOverriddenEvent(event: string | symbol): boolean {

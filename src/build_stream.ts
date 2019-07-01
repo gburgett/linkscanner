@@ -1,6 +1,5 @@
 import { ParallelTransform, Readable } from 'async-toolbox/stream'
 import * as crossFetch from 'cross-fetch'
-import { Transform } from 'stream'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { FetchInterface } from './fetcher'
@@ -92,11 +91,7 @@ export function BuildStream(
   const fetcher = reentry
     .pipe(new DivergentStreamWrapper({
       objectMode: true,
-      hashChunk: (chunk: Chunk | EOF) => {
-        if (isEOF(chunk)) {
-          // send the EOF to all streams
-          return DivergentStreamWrapper.ALL
-        }
+      hashChunk: (chunk: Chunk) => {
         return chunk.url.hostname
       },
       createStream: (hostname) => hostnameSet.streamFor(hostname),
