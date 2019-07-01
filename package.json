@@ -7,7 +7,8 @@
     "linkscanner": "bin/linkscanner"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "bin/**/*"
   ],
   "scripts": {
     "lint": "tslint 'src/**/*.ts'",
