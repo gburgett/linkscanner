@@ -1,6 +1,6 @@
 import yargs from 'yargs'
 
-import Run from '.'
+import Linkscanner from '.'
 import { debugLogger, defaultLogger } from './logger'
 
 const argv = yargs
@@ -48,11 +48,12 @@ const defaults = {
   logger: argv.debug ? debugLogger : defaultLogger,
 }
 
-Run({
+const instance = new Linkscanner({
   ...defaults,
-  source: argv._,
   ...argv,
 })
+
+instance.run(argv._)
   .then(
     () => {
       defaults.logger.debug('done')

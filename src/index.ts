@@ -1,12 +1,14 @@
 import { onceAsync } from 'async-toolbox/events'
-import { Writable } from 'stream'
+import { Readable, Writable } from 'async-toolbox/stream'
 
+import { PassThrough } from 'stream'
 import { BuildStream } from './build_stream'
 import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
+import { Result } from './model'
 import { loadSource } from './source'
-import { parseUrl } from './url'
+import { assign, Options } from './util'
 
 const formatters = {
   table: (args: Args) => new TableFormatter(args),
@@ -26,46 +28,92 @@ const defaultFormatter = (args: Args) => {
 }
 
 export interface Args {
-  source: string | string[],
   hostnames?: string | string[]
-  followRedirects?: boolean
-  recursive?: boolean
-  'exclude-external'?: boolean
-  include?: string[]
+  followRedirects: boolean
+  recursive: boolean
+  'exclude-external': boolean
+  include: string[]
 
-  formatter?: keyof typeof formatters | Writable
+  formatter?: keyof typeof formatters | Writable<Result>
   /** Formatter option: more output */
-  verbose?: boolean,
+  verbose: boolean,
 
-  logger?: Logger
+  logger: Logger
 }
 
-async function Run(args: Args): Promise<void> {
-  const options = Object.assign({
-    logger: defaultLogger,
-    followRedirects: false,
-  }, args)
+/**
+ * Create a Linkscanner run by instantiating this class and calling `await run('https://the-url')`.
+ */
+class Linkscanner {
+  private readonly _options: Args
 
-  const hostnames = options.hostnames ?
-    new Set(Array.from(options.hostnames)) : undefined
+  constructor(options: Options<Args>) {
+    this._options = assign({
+      'hostnames': null,
+      'followRedirects': false,
+      'recursive': false,
+      'exclude-external': false,
+      'include': [
+        'a[href]',
+        'link[rel="canonical"]',
+      ],
+      'verbose': false,
+      'logger': defaultLogger,
+    }, options)
+  }
 
-  const source = loadSource(options)
+  /**
+   * Runs the link checker over the given URLs, returning a promise which
+   * completes when the configured formatter is done writing the last results.
+   */
+  public run = async (source: string | string[]): Promise<void> => {
+    const formatterName = this._options.formatter
+    const formatter: Writable<Result> = (
+      typeof(formatterName) == 'object' ?
+        formatterName
+        : formatterName && formatters[formatterName] && formatters[formatterName](this._options)
+    ) || defaultFormatter(this._options)
 
-  const results = BuildStream(source, {
-    ...options,
-    hostnames,
-  })
+    const sourceStream = loadSource({ source })
 
-  const formatter: Writable = (options.formatter &&
-    typeof(options.formatter) == 'string' ?
-      formatters[options.formatter] && formatters[options.formatter](options)
-      : options.formatter
-  ) || defaultFormatter(options)
+    const { source: entryStream, results } = this.buildStream()
 
-  const withFormatter = results
-    .pipe(formatter)
+    // pipe all the streams together
+    sourceStream.pipe(entryStream)
+    results.pipe(formatter)
 
-  await onceAsync(withFormatter, 'finish')
+    await onceAsync(formatter, 'finish')
+  }
+
+  /**
+   * The programmatic interface to the Linkchecker - the returned pair of streams
+   * allow you to pipe URLs to the source and pipe the results wherever you'd like.
+   * In fact the `run` method uses this internally.
+   *
+   * @example
+   *   const { source, results } = this.buildStream()
+   *   toReadable(['https://www.google.com']).pipe(source)
+   *   const formatter = new ConsoleFormatter()
+   *   results.pipe(formatter)
+   *   await onceAsync(formatter, 'finish')
+   */
+  public buildStream = (): { source: Writable<string>, results: Readable<Result> } => {
+    const hostnames = this._options.hostnames ?
+      new Set(Array.from(this._options.hostnames)) : undefined
+
+    const source = new PassThrough({
+      objectMode: true,
+      highWaterMark: 1,
+    })
+    return {
+      source,
+      results: BuildStream(source, {
+        ...this._options,
+        hostnames,
+      }),
+    }
+  }
+
 }
 
-export default Run
+export default Linkscanner

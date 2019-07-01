@@ -1,12 +1,10 @@
 import {toReadable} from 'async-toolbox/stream'
 import { EOL } from 'os'
-import readline from 'readline'
-import { PassThrough, Transform } from 'stream'
-import { Args } from '.'
+import { Transform } from 'stream'
 
-export function loadSource(args: Args) {
+export function loadSource(args: { source: string | string [] }) {
   // specify '-' to read from stdin
-  if (args.source == '-' ||
+  if (args.source == '-' || args.source == ['-'] ||
       // or if no URL is given on the command line
       args.source.length == 0 && typeof process != 'undefined') {
     return process.stdin.pipe(new LineByLineTransform())
