@@ -1,4 +1,4 @@
-import { Writable } from 'async-toolbox/stream'
+import { ParallelTransform, Writable } from 'async-toolbox/stream'
 import { Transform, TransformCallback, TransformOptions } from 'stream'
 import { defaultLogger, Logger } from './logger'
 import { Chunk } from './model'

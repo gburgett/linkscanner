@@ -1,10 +1,11 @@
 import {wait} from 'async-toolbox'
-import {} from 'async-toolbox/events'
-import { collect } from 'async-toolbox/stream'
+import {onceAsync} from 'async-toolbox/events'
+import { collect, ParallelTransform, toReadable } from 'async-toolbox/stream'
 import { expect } from 'chai'
 import { } from 'mocha'
 
-import { EOF, isEOF, Reentry } from './reentry'
+import { Readable, Transform, Writable } from 'stream'
+import { EOF, handleEOF, isEOF, Reentry } from './reentry'
 import { parseUrl } from './url'
 
 // tslint:disable: no-unused-expression
@@ -92,7 +93,7 @@ describe('Reentry', () => {
       instance.write('http://www.test.com')
       instance.tryEnd()
 
-      await instance.onceAsync('end')
+      await onceAsync(instance, 'end')
       expect(collected.length).to.eq(2)
       expect(collected[1]).to.eq(lastEOF)
     })
@@ -120,11 +121,32 @@ describe('Reentry', () => {
       instance.write('http://www.test.com')
       instance.tryEnd()
 
-      await instance.onceAsync('end')
+      await onceAsync(instance, 'end')
       expect(collected.length).to.eq(4)
       expect(collected[1]).to.eq(firstEOF)
       expect(collected[2]).to.deep.eq({ url: parseUrl('http://www.test2.com')})
       expect(isEOF(collected[3])).to.be.true
+    })
+
+    it('ends even when piped', async () => {
+      const lastEOF: EOF | null = null
+
+      const source = toReadable(['http://www.test.com'])
+
+      const instance = source.pipe(new Reentry({ logger: console }), { end: false })
+
+      const result = instance.pipe(handleEOF(instance))
+
+      source.on('end', () => {
+        instance.tryEnd()
+      })
+
+      // have to set the stream into flowing mode!
+      result.on('data', (data) => {return})
+
+      const collected = await collect(result)
+      expect(collected.length).to.eq(1)
+      expect(collected[0].url.toString()).to.eq('http://www.test.com/')
     })
   })
 })
