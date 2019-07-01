@@ -42,9 +42,15 @@ export class HostnameSet {
       return existing
     }
 
-    return new Fetcher({
+    const stream = new Fetcher({
       ...this._options,
       semaphore: this.lockFor(hostname),
     })
+
+    stream.on('end', () => {
+      this._streams.delete(hostname)
+    })
+
+    return stream
   }
 }
