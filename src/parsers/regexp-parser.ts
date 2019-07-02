@@ -25,16 +25,21 @@ export class RegexpParser {
   public async parse(response: Response, request: Request, push: (result: URL) => void): Promise<void> {
     const { logger } = this._options
 
+    const baseUrl = response.url || request.url
+
     const text = await response.text()
     const matches = text.match(RegexpParser.regexp)
     if (matches) {
       for (const match of matches) {
+        let url: URL | null = null
         try {
-          const url = parseUrl(match)
-          push(url)
+          url = parseUrl(match, baseUrl)
         } catch (err) {
           // false positive - ignore
           logger.debug(`bad href: '${match}'`)
+        }
+        if (url) {
+          push(url)
         }
       }
     }

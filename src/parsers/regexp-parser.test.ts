@@ -9,9 +9,10 @@ describe('RegexpParser', () => {
   it('finds a URL in the response body', async () => {
     const parser = new RegexpParser()
 
+    const req = new Request('https://some-url.com')
     const resp = new Response('<a href="https://google.com"></a>')
     const results: URL[] = []
-    await parser.parse(resp, undefined as any, (result) => results.push(result))
+    await parser.parse(resp, req, (result) => results.push(result))
 
     expect(results.length).to.eq(1)
     expect(results[0].toString()).to.eq('https://google.com/')
@@ -20,9 +21,10 @@ describe('RegexpParser', () => {
   it('finds all URLs in google homepage', async () => {
     const parser = new RegexpParser()
 
+    const req = new Request('https://some-url.com')
     const resp = new Response(rawGoogleHtml)
     const results: URL[] = []
-    await parser.parse(resp, undefined as any, (result) => results.push(result))
+    await parser.parse(resp, req, (result) => results.push(result))
 
     expect(results.length).to.eq(12)
     expect(results[0].toString()).to.eq('http://schema.org/WebPage')
@@ -34,6 +36,7 @@ describe('RegexpParser', () => {
   it('handles sitemap URLs', async () => {
     const parser = new RegexpParser()
 
+    const req = new Request('https://some-url.com')
     const resp = new Response(`
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -42,7 +45,7 @@ describe('RegexpParser', () => {
   </url>
 </urlset>`)
     const results: URL[] = []
-    await parser.parse(resp, undefined as any, (result) => results.push(result))
+    await parser.parse(resp, req, (result) => results.push(result))
 
     expect(results.length).to.eq(3)
     expect(results[0].toString()).to.eq('http://www.sitemaps.org/schemas/sitemap/0.9')
