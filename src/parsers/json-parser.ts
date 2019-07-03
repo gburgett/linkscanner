@@ -1,9 +1,6 @@
-import { Request, Response } from 'cross-fetch'
-import oboe from 'oboe'
 
-import { ParserOptions, RegexpParser } from '.'
+import { ParserOptions } from '.'
 import { defaultLogger } from '../logger'
-import { Result } from '../model'
 import { URL } from '../url'
 import { parseUrl } from '../url'
 import { assign, Options } from '../util'
@@ -24,29 +21,18 @@ export class JsonParser {
   }
 
   public async parse(response: Response, request: Request, push: (result: URL) => void): Promise<void> {
-    const { logger } = this._options
     const baseUrl = response.url || request.url
 
-    return new Promise((resolve, reject) => {
-      oboe(response.body! as unknown as NodeJS.ReadableStream)
-        .node('*', (node, path, ancestors) => {
-          if (typeof node == 'string') {
-            if (node.match(JsonParser.regexp)) {
-              this._tryEmit(node, baseUrl, push)
-            } else {
-              console.log(`no match '${node}'`, JsonParser.regexp)
-            }
-          }
-        })
-        .done((result) => {
-          console.log('parsed json:', result)
-          resolve(result)
-        })
-        .fail((err) => {
-          reject(err)
-        })
-
-    })
+    for (const { value } of traverse(await response.json())) {
+      // do something here with each key and value
+      if (typeof value == 'string') {
+        if (value.match(JsonParser.regexp)) {
+          this._tryEmit(value, baseUrl, push)
+        } else {
+          console.log(`no match '${value}'`, JsonParser.regexp)
+        }
+      }
+    }
   }
 
   private _tryEmit(match: string, base: string, push: (result: URL) => void) {
@@ -58,5 +44,19 @@ export class JsonParser {
       return
     }
     push(url)
+  }
+}
+
+/**
+ * https://stackoverflow.com/questions/722668/traverse-all-the-nodes-of-a-json-object-tree-with-javascript
+ */
+function* traverse(o: any, path: string[] = []): Iterable<{ key: string, value: string, path: string[]}> {
+  for (const i of Object.keys(o)) {
+      const itemPath = path.concat(i)
+      yield {key: i, value: o[i], path: itemPath }
+      if (o[i] !== null && typeof(o[i]) == 'object') {
+          // going one step down in the object tree!!
+          yield* traverse(o[i], itemPath)
+      }
   }
 }

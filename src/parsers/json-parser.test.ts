@@ -1,21 +1,20 @@
 import { expect } from 'chai'
 import { Response } from 'cross-fetch'
+import fetchMock from 'fetch-mock'
 import {} from 'mocha'
-import { URL } from '../url'
 
-import { PassThrough, Readable } from 'stream'
+import { URL } from '../url'
 import { JsonParser } from './json-parser'
 
 describe('JsonParser', () => {
   it('finds a URL in the json body', async () => {
     const parser = new JsonParser()
 
-    const req = new Request('https://some-json.com')
-    const resp = new Response(toStream('{ "data": [{"url": "https://google.com"}] }'), {
-      headers: {
-        'content-type':  'application/json',
-      },
-    })
+    const { req, resp } = await makeResp(
+      'https://some-json.com',
+      '{ "data": [{"url": "https://google.com"}] }',
+    )
+
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
@@ -26,12 +25,10 @@ describe('JsonParser', () => {
   it('finds non-relative URLs in some json', async () => {
     const parser = new JsonParser()
 
-    const req = new Request('https://some-json.com/some-path')
-    const resp = new Response(toStream('[{"url": "/other-path"}]'), {
-      headers: {
-        'content-type': 'application/json',
-      },
-    })
+    const { req, resp } = await makeResp(
+      'https://some-json.com/some-path',
+      '[{"url": "/other-path"}]',
+    )
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
@@ -42,12 +39,10 @@ describe('JsonParser', () => {
   it('handles protocol relative URLs', async () => {
     const parser = new JsonParser()
 
-    const req = new Request('https://some-json.com/some-path')
-    const resp = new Response(toStream('["//images.ctfassets.net/asdf.png"]'), {
-      headers: {
-        'content-type': 'application/json',
-      },
-    })
+    const { req, resp } = await makeResp(
+      'https://some-json.com/some-path',
+      '["//images.ctfassets.net/asdf.png"]',
+    )
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
@@ -58,12 +53,10 @@ describe('JsonParser', () => {
   it('handles URLs in whitespace', async () => {
     const parser = new JsonParser()
 
-    const req = new Request('https://some-json.com/some-path')
-    const resp = new Response(toStream('{ "url": "\thttp://images.ctfassets.net/asdf.png  " }'), {
-      headers: {
-        'content-type': 'application/json',
-      },
-    })
+    const { req, resp } = await makeResp(
+      'https://some-json.com/some-path',
+      '{ "url": "  http://images.ctfassets.net/asdf.png  " }',
+    )
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
@@ -72,9 +65,17 @@ describe('JsonParser', () => {
   })
 })
 
-function toStream(string: string): ReadableStream<Uint8Array> {
-  const s = new PassThrough()
-  s.write(Buffer.from(string))
-  s.end()
-  return s as any
+async function makeResp(url: string, response: string): Promise<{ req: Request, resp: Response }> {
+  const sandbox = fetchMock.sandbox()
+
+  sandbox.get(url, {
+    body: response,
+    headers: {
+      'content-type': 'application/json',
+    },
+  })
+
+  const req = new Request(url)
+  const resp = await sandbox(req)
+  return { req, resp }
 }
