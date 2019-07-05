@@ -3,6 +3,7 @@ import * as crossFetch from 'cross-fetch'
 import fetchMock from 'fetch-mock'
 import { } from 'mocha'
 
+import { onceAsync } from 'async-toolbox/events'
 import { collect, toReadable } from 'async-toolbox/stream'
 import { BuildStream, BuildStreamOptions } from './build_stream'
 import { Result } from './model'
@@ -143,5 +144,34 @@ describe('BuildStream', () => {
     expect(result.length).to.equal(2)
     expect(result[0].url.toString()).to.eq('http://test.com/testpage/')
     expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
+  })
+
+  it('emits URL events on resulting stream', async () => {
+    fetchMockSandbox.get('http://test.com/testpage',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body><a href="http://other.com">Other Page</a></body></html>`,
+      })
+    fetchMockSandbox.headOnce('http://other.com', 200)
+
+    const source = toReadable(['http://test.com/testpage'])
+
+    const uut = BuildStream(source, options)
+
+    // act
+    const urls: any[] = []
+    uut.on('url', (value) => {
+      urls.push(value)
+    })
+
+    // attach to data so that the stream flows
+    uut.on('data', () => {return})
+    await onceAsync(uut, 'end')
+
+    expect(urls.length).to.eq(1)
+    expect(urls[0].url.toString()).to.eq('http://other.com/')
   })
 })

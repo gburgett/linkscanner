@@ -2,6 +2,7 @@ import { ParallelTransform, Readable } from 'async-toolbox/stream'
 import * as crossFetch from 'cross-fetch'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
+import { EventForwarder, StreamEvents } from './event_forwarder'
 import { FetchInterface } from './fetcher'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
@@ -141,6 +142,13 @@ export function BuildStream(
   //   fetcher,
   //   results,
   // })
+
+  new EventForwarder({
+    ignore: StreamEvents,
+  })
+    .from(fetcher)
+    .from(reentry)
+    .to(results)
 
   // The CLI or consuming program needs the readable stream of results
   return results

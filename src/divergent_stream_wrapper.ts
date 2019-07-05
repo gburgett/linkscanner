@@ -3,6 +3,7 @@ import {onceAsync} from 'async-toolbox/events'
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 import { Duplex } from 'stream'
 
+import { EventForwarder, StreamEvents } from './event_forwarder'
 import { EOF, isEOF } from './reentry'
 
 type HashChunk = (chunk: any) => string | string[]
@@ -23,15 +24,14 @@ type DivergentStreamWrapperOptions<T extends Duplex> =
 export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelTransform {
   public static readonly ALL = Symbol('All Hosts')
 
-  public on = this.addListener
-  public prependOnceListener: any = raiseNotImplemented('prependOnceListener')
-  public off: any = raiseNotImplemented('off')
-  public removeAllListeners: any = raiseNotImplemented('removeAllListeners')
-
   private readonly _hashChunk: HashChunk
   private readonly _streams: Map<string, Duplex>
   private readonly _createStreamOptions: CreateStreamOptions
-  private readonly _eventNames = new Set<string | symbol>()
+  private readonly _forwarder = new EventForwarder({
+      // Don't forward the normal stream events from inner streams, just the
+      // special Linkscanner events
+      ignore: StreamEvents,
+    }).to(this)
 
   constructor(options: DivergentStreamWrapperOptions<T>) {
     super({
@@ -87,46 +87,6 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     await Promise.all(promises)
   }
 
-  public addListener(event: string | symbol, listener: (...args: any[]) => void): this {
-    super.addListener(event, listener)
-
-    if (isOverriddenEvent(event)) {
-      return this
-    }
-    this._eventNames.add(event)
-    if (this._streams) { this._streams.forEach((value) => value.on(event, listener)) }
-    return this
-  }
-
-  public once(event: string | symbol, listener: (...args: any[]) => void): this {
-    const wrapper = (...args: any[]) => {
-      this.removeListener(event, wrapper)
-      listener.call(this, args)
-    }
-    return this.on(event, wrapper)
-  }
-
-  public prependListener(event: string | symbol, listener: (...args: any[]) => void): this {
-    super.prependListener(event, listener)
-
-    if (isOverriddenEvent(event)) {
-      return this
-    }
-    this._eventNames.add(event)
-    if (this._streams) { this._streams.forEach((value) => value.prependListener(event, listener)) }
-    return this
-  }
-
-  public removeListener(event: string | symbol, listener: (...args: any[]) => void): this {
-    super.removeListener(event, listener)
-
-    if (isOverriddenEvent(event)) {
-      return this
-    }
-    if (this._streams) { this._streams.forEach((value) => value.removeListener(event, listener)) }
-    return this
-  }
-
   private _streamsFor(chunk: any): Duplex[] {
     let hashes = this._hashChunk(chunk)
     if (!Array.isArray(hashes)) {
@@ -140,9 +100,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
 
       const innerStream = this._createStream(hash)
 
-      this._eventNames.forEach((evt) => {
-        this.listeners(evt).forEach((l) => innerStream.on(evt, l as (...args: any[]) => void))
-      })
+      this._forwarder.from(innerStream)
 
       this._streams.set(hash, innerStream)
       this._registerNewStream(innerStream, hash)
@@ -166,13 +124,4 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
       semaphore: this._createStreamOptions.semaphore ? this._createStreamOptions.semaphore(hash) : undefined,
     })
   }
-}
-
-function isOverriddenEvent(event: string | symbol): boolean {
-  return typeof(event) == 'string' &&
-    ['data', 'error', 'end', 'unpipe', 'drain', 'close', 'finish'].includes(event)
-}
-
-function raiseNotImplemented(name: string) {
-  return () => { throw new Error(`${name} not implemented!`) }
 }
