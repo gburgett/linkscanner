@@ -13,19 +13,28 @@ export function isURL(object: any): object is URL {
   return object instanceof URL
 }
 
-export function parseUrls(): Transform<string, URL> {
+export function parseUrls(): stream.Transform {
   return new stream.Transform({
     objectMode: true,
-    transform(strChunk, encoding, done) {
-      try {
-        // skip whitespace lines
-        if (/\S/.test(strChunk)) {
-          this.push(parseUrl(strChunk))
+    transform(strChunk: any, encoding, done) {
+      if (typeof strChunk == 'string') {
+        try {
+          // skip whitespace lines
+          if (/\S/.test(strChunk)) {
+            this.push(parseUrl(strChunk))
+          }
+        } catch (ex) {
+          done(new Error(`Unable to parse URL '${strChunk}'\n\t${ex}`))
+          return
         }
-        done()
-      } catch (ex) {
-        done(new Error(`Unable to parse URL '${strChunk}'\n\t${ex}`))
+      } else if (isURL(strChunk)) {
+        this.push(strChunk)
+      } else {
+        done(new Error(`Unknown object (not a string or URL): ${strChunk}`))
+        return
       }
+
+      done()
     },
   })
 }
