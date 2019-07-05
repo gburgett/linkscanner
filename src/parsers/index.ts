@@ -40,6 +40,7 @@ export const defaultParsers = (options?: Options<ParserOptions>) => ({
     'video': NullParser,
     'audio': NullParser,
     'image': NullParser,
+    'application/pdf': NullParser,
   })
 
 export function findParser(parsers: Parsers, mimeType: string | null): Parser {
