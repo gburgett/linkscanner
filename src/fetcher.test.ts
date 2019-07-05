@@ -85,6 +85,29 @@ describe('Fetcher', () => {
     expect(calls[1][1]!.method).to.eq('GET')
   })
 
+  it('does not parse body when a leaf 405 is retried as a GET', async () => {
+    const uut = instance()
+
+    fetchMockSandbox.headOnce('http://other.com', 405)
+    fetchMockSandbox.getOnce('http://other.com', {
+      status: 200,
+      headers: {
+        'content-type': 'text/html',
+      },
+      body: '<a href="http://www.google.com"></a>',
+    })
+
+    const emitted: URL[] = []
+    uut.on('url', (url) => emitted.push(url))
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
+    await uut.endAsync()
+    await collect(uut)
+
+    expect(emitted.length).to.eq(0)
+  })
+
   it('pushes an error result when fetch throws', async () => {
     const uut = instance()
 

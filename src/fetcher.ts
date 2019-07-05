@@ -113,7 +113,7 @@ export class Fetcher extends ParallelTransform {
 
     logger.debug(`${request.method} ${request.url} ${response.status}`)
 
-    if (response.status >= 200 && response.status < 300) {
+    if (!chunk.leaf && response.status >= 200 && response.status < 300) {
       await parser.parse(response, request, (u) => {
         partialResult.links.push(u)
         this.emit('url', {
