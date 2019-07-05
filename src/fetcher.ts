@@ -89,6 +89,7 @@ export class Fetcher extends ParallelTransform {
 
     let response: Response
     try {
+      this.emit('fetch', request)
       response = await timeout(() => fetch(request), this.options.timeout)
     } catch (ex) {
       const errorResult: ErrorResult = {
@@ -101,6 +102,7 @@ export class Fetcher extends ParallelTransform {
       this.push(errorResult)
       return
     }
+    this.emit('response', response, request)
 
     let contentType = response.headers.get('content-type')
     if (contentType) {

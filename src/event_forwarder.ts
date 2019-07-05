@@ -59,7 +59,9 @@ export class EventForwarder {
         const include = !self._options.only || self._options.only.has(event)
         if (include && !ignore) {
           // keep track of events that are being listened to on toEmitters
-          self._eventNames.add(event)
+          if (!self._eventNames.has(event)) {
+            self._registerEvent(event)
+          }
         }
 
         return oldMethod.call(this, event, listener)
@@ -74,17 +76,28 @@ export class EventForwarder {
     }
     this._fromEmitters.add(emitter)
 
-    const oldEmit = emitter.emit
-    const self = this
-    emitter.emit = function(event, ...data) {
-      // if it's an event that a toEmitter is listening to, then emit it on the toEmitter also
-      if (self._eventNames.has(event)) {
-        self._toEmitters.forEach((to) => {
-          to.emit(event, ...data)
+    this._eventNames.forEach((event) => {
+      emitter.on(event, (...args) => {
+        this._toEmitters.forEach((to) => {
+          to.emit(event, ...args)
         })
-      }
-      return oldEmit.call(this, event, ...data)
-    }
+      })
+    })
     return this
+  }
+
+  private _registerEvent(event: string | symbol) {
+    if (this._eventNames.has(event)) {
+      return
+    }
+    this._eventNames.add(event)
+
+    this._fromEmitters.forEach((from) => {
+      from.on(event, (...args) => {
+        this._toEmitters.forEach((to) => {
+          to.emit(event, ...args)
+        })
+      })
+    })
   }
 }

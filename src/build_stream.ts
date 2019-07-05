@@ -103,10 +103,18 @@ export function BuildStream(
   const results = fetcher
     .pipe(handleEOF(reentry))
 
+  new EventForwarder({
+    only: ['url', 'fetch', 'response', 'EOS'],
+  })
+    .from(fetcher)
+    .from(reentry)
+    .to(results)
+
   source.on('end', () => {
     // The source is done sending us URLs to check, now it's up to the reentry
     // to tell us when we're finally done.
     logger.debug('end of source')
+    results.emit('EOS')
     reentry.tryEnd()
   })
 
@@ -143,12 +151,10 @@ export function BuildStream(
   //   results,
   // })
 
-  new EventForwarder({
-    ignore: StreamEvents,
+  sourceUrlTracker.on('data', (url) => {
+    // forward source URLs as URL events too, with no parent
+    results.emit('url', { url })
   })
-    .from(fetcher)
-    .from(reentry)
-    .to(results)
 
   // The CLI or consuming program needs the readable stream of results
   return results
