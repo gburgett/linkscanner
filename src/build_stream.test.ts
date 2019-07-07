@@ -22,6 +22,12 @@ describe('BuildStream', () => {
       },
       logger: console,
     }
+
+    fetchMockSandbox.getOnce('http://test.com/robots.txt', 404)
+    fetchMockSandbox.getOnce('http://other.com/robots.txt', `
+    User-agent: *
+    Crawl-delay: 1
+    Disallow: /dir/`)
   })
 
   it('fetches a single URL', async () => {

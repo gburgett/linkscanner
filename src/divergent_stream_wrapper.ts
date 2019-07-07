@@ -7,7 +7,7 @@ import { EventForwarder, StreamEvents } from './event_forwarder'
 import { EOF, isEOF } from './reentry'
 
 type HashChunk = (chunk: any) => string | string[]
-type CreateStream<T extends Duplex> = (hash: string) => T
+type CreateStream<T extends Duplex> = (hash: string) => T | Promise<T>
 
 type CreateStreamOptions = ParallelTransformOptions & {
   semaphore?: (hash: string) => Semaphore,
@@ -74,7 +74,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
 
     // Block until all our streams for this chunk can accept another chunk
     await Promise.all(
-      this._streamsFor(chunk).map((stream) => stream.writeAsync(chunk)),
+      this._streamsFor(chunk).map(async (stream) => (await stream).writeAsync(chunk)),
     )
   }
 
@@ -87,18 +87,18 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     await Promise.all(promises)
   }
 
-  private _streamsFor(chunk: any): Duplex[] {
+  private _streamsFor(chunk: any): Array<Promise<Duplex>> {
     let hashes = this._hashChunk(chunk)
     if (!Array.isArray(hashes)) {
       hashes = [hashes]
     }
-    return hashes.map((hash) => {
+    return hashes.map(async (hash) => {
       const existing = this._streams.get(hash)
       if (existing) {
         return existing
       }
 
-      const innerStream = this._createStream(hash)
+      const innerStream = await this._createStream(hash)
 
       this._forwarder.from(innerStream)
 
@@ -118,7 +118,7 @@ export class DivergentStreamWrapper<T extends Duplex = Duplex> extends ParallelT
     }
   }
 
-  private _createStream(hash: string): Duplex {
+  private _createStream(hash: string): Duplex | Promise<Duplex> {
     return new ParallelTransform({
       ...this._createStreamOptions,
       semaphore: this._createStreamOptions.semaphore ? this._createStreamOptions.semaphore(hash) : undefined,

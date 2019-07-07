@@ -5127,6 +5127,11 @@ ripemd160@^2.0.0, ripemd160@^2.0.1:
     hash-base "^3.0.0"
     inherits "^2.0.1"
 
+robots-parser@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/robots-parser/-/robots-parser-2.1.1.tgz#41b289cf44a6aa136dc62be0085adca954573ab0"
+  integrity sha512-6yWEYSdhK3bAEcYY0In3wgSBK70BiQoJArzdjZKCP/35b3gKIYu5Lc0qQqsoxjoLVebVoJiKK4VWGc5+oxvWBQ==
+
 run-queue@^1.0.0, run-queue@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/run-queue/-/run-queue-1.0.3.tgz#e848396f057d223f24386924618e25694161ec47"

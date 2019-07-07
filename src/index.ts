@@ -2,7 +2,6 @@ import { onceAsync } from 'async-toolbox/events'
 import { Readable, Writable } from 'async-toolbox/stream'
 import { PassThrough } from 'stream'
 
-import chalk from 'chalk'
 import { BuildStream } from './build_stream'
 import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
