@@ -1,7 +1,7 @@
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { Result } from '../model'
+import { isSkippedResult, Result } from '../model'
 import { assign, Options, present } from '../util'
 
 export interface TableFormatterOptions {
@@ -27,9 +27,13 @@ export class TableFormatter extends Writable {
   public _write(result: Result, encoding: any, cb: (error?: Error | null) => void) {
     const { logger, verbose } = this.options
 
+    if (isSkippedResult(result)) {
+      return
+    }
+
     const line = [
       result.status && result.status.toFixed(0),
-      result.method.padEnd(4),
+      result.method && result.method.padEnd(4),
       result.url.toString().padEnd(80),
       'ms' in result && result.ms.toFixed(0).padStart(4),
       result.parent && result.parent.url.toString(),

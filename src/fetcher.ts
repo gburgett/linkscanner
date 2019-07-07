@@ -115,11 +115,14 @@ export class Fetcher extends ParallelTransform {
 
     if (!chunk.leaf && response.status >= 200 && response.status < 300) {
       await parser.parse(response, request, (u) => {
-        partialResult.links.push(u)
-        this.emit('url', {
-          url: u,
-          parent: partialResult,
-        })
+        if (!partialResult.links.includes(u)) {
+          partialResult.links.push(u)
+
+          this.emit('url', {
+            url: u,
+            parent: partialResult,
+          })
+        }
       })
     }
     const end = isomorphicPerformance.now()
@@ -140,7 +143,6 @@ export class Fetcher extends ParallelTransform {
         } catch (ex) {
           const error: ErrorResult = {
             ...fullResult,
-            status: undefined,
             leaf: true,
             reason: 'error',
             error: new Error(`${fullResult.status}: bad location header '${location}'`),
@@ -153,7 +155,6 @@ export class Fetcher extends ParallelTransform {
       } else {
         const error: ErrorResult = {
           ...fullResult,
-          status: undefined,
           leaf: true,
           reason: 'error',
           error: new Error(`${fullResult.status}: missing location header`),

@@ -6,7 +6,7 @@ import { } from 'mocha'
 import { onceAsync } from 'async-toolbox/events'
 import { collect, toReadable } from 'async-toolbox/stream'
 import { BuildStream, BuildStreamOptions } from './build_stream'
-import { Result } from './model'
+import { Result, SuccessResult } from './model'
 import { Options } from './util'
 
 describe('BuildStream', () => {
@@ -47,7 +47,7 @@ describe('BuildStream', () => {
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result[0].status).to.eq(200)
+    expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('test.com')
     expect(result[0].url.toString()).to.eq('http://test.com/testpage')
   })
@@ -71,7 +71,7 @@ describe('BuildStream', () => {
     const result: Result[] = await collect(uut)
 
     expect(result.length).to.equal(2)
-    expect(result[1].status).to.eq(200)
+    expect((result[1] as SuccessResult).status).to.eq(200)
     expect(result[1].host).to.eq('other.com')
     expect(result[1].url.toString()).to.eq('http://other.com/')
     expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
@@ -107,12 +107,12 @@ describe('BuildStream', () => {
     const result: Result[] = await collect(uut)
 
     expect(result.length).to.equal(3)
-    expect(result[1].status).to.eq(200)
+    expect((result[1] as SuccessResult).status).to.eq(200)
     expect(result[1].host).to.eq('test.com')
     expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
     expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage/')
 
-    expect(result[2].status).to.eq(200)
+    expect((result[2] as SuccessResult).status).to.eq(200)
     expect(result[2].host).to.eq('other.com')
     expect(result[2].url.toString()).to.eq('http://other.com/')
     expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage/relative/link')

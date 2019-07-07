@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { isErrorResult, isSuccessResult, Result } from '../model'
+import { ErrorResult, isErrorResult, isSkippedResult, isSuccessResult, Result, SkippedResult, SuccessResult } from '../model'
 import { assign, Options, present } from '../util'
 
 export interface ConsoleFormatterOptions {
@@ -104,10 +104,45 @@ export class ConsoleFormatter extends Writable {
     }
 
     const linkCount = result.links.length
-    const excludedCount = result.links.length - childResults.length
-    const brokenResults = childResults.filter((r) => !r.status || r.status >= 400)
-    const redirectResults = childResults.filter((r) => r.status && r.status >= 300 && r.status < 400)
+    const successResults = childResults.filter(isSuccessResult)
 
+    // Broken results need to be printed in red
+    const brokenResults = childResults.filter<ErrorResult | SuccessResult>(isErrorResult)
+      .concat(successResults.filter((r) => r.status >= 400))
+
+    // Redirect results printed in yellow
+    const redirectResults = successResults
+      .filter((r) => r.status >= 300 && r.status < 400)
+
+    // OK results in green or hidden
+    const okResults = successResults
+      .filter((r) => r.status < 300)
+
+    // Excluded results not printed but we need the count
+    const excludedResults = childResults.filter(isSkippedResult)
+
+    // Unknown results - there was a recorded link but no result object written.
+    // Add them to the broken results.
+    const unknownResults = result.links.filter((r) =>
+      !childResults.find((excluded) =>
+        excluded.url.toString() == r.toString()))
+
+    brokenResults.push(...unknownResults.map<ErrorResult>((r) => ({
+      url: r,
+      method: undefined,
+      status: undefined,
+      host: r.hostname,
+      leaf: true,
+      parent: result,
+      reason: 'unknown',
+      error: new Error(`Unable to find matching result for ${r}`),
+    })))
+
+    /*
+     * 200 GET https://www.google.com/somewhere
+     *    found on https://www.google.com
+     *    X links found, Y not checked. Z broken.
+     */
     const lines = [
       colorize(
         `${result.status.toFixed(0).padEnd(3)} ${result.method.padEnd(4)} ${result.url.toString()}`,
@@ -115,13 +150,21 @@ export class ConsoleFormatter extends Writable {
       ),
       result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
       linkCount > 0 &&
-        chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedCount.toFixed(0)} not checked. `) +
+        chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedResults.length.toFixed(0)} not checked. `) +
           (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
     ]
-    const resultsToPrint = verbose ? childResults : brokenResults.concat(redirectResults)
+
+    /**
+     * 404 GET  https://some-broken-link.com
+     * 301 HEAD https://some-redirect.com
+     */
+    const resultsToPrint: Array<ErrorResult | SuccessResult> = brokenResults.concat(redirectResults)
+    if (verbose) {
+      resultsToPrint.push(...okResults)
+    }
     lines.push(...resultsToPrint.map((r) =>
       colorize(
-        `\t${r.status ? r.status.toFixed(0).padEnd(3) : '   '} ${r.method.padEnd(4)} ${r.url.toString()}`,
+        `\t${r.status ? r.status.toFixed(0).padEnd(3) : '   '} ${r.method && r.method.padEnd(4)} ${r.url.toString()}`,
         r.status,
       ),
     ))

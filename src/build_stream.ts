@@ -6,7 +6,7 @@ import { EventForwarder, StreamEvents } from './event_forwarder'
 import { FetchInterface } from './fetcher'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
-import { Chunk, Result } from './model'
+import { Chunk, Result, SkippedResult, SuccessResult } from './model'
 import { handleEOF, Reentry } from './reentry'
 import { parseUrl, parseUrls, URL } from './url'
 import { assign, Options } from './util'
@@ -120,10 +120,18 @@ export function BuildStream(
 
   // Whenever the fetcher generates a URL, we may need to feed it back to the
   // Reentry for recursive fetching.
-  fetcher.on('url', ({ url, parent }: { url: URL, parent: Result }) => {
+  fetcher.on('url', ({ url, parent }: { url: URL, parent: SuccessResult }) => {
     if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
       // only scan URLs matching our known hostnames
-      logger.debug('external', url.toString())
+      const result: SkippedResult = {
+        url,
+        parent,
+        host: url.hostname,
+        leaf: true,
+        skipped: true,
+        reason: 'external',
+      }
+      results.write(result)
       return
     }
 

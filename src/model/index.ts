@@ -1,15 +1,15 @@
 import { URL } from '../url'
 
-export type Result = SuccessResult | ErrorResult
+export type Result = SuccessResult | ErrorResult | SkippedResult
 
 interface ResultCommon {
-  method: string
   url: URL
   host: string
   parent?: SuccessResult
 }
 
 export interface SuccessResult extends ResultCommon {
+  method: string
   status: number
   ms: number
   links: URL[]
@@ -18,21 +18,35 @@ export interface SuccessResult extends ResultCommon {
 
 export function isSuccessResult(result: Result): result is SuccessResult {
   return 'status' in result && result.status !== undefined && result.status !== null
+    && !('error' in result)
 }
 
-export type ErrorReason =
-  'error'
-  | 'timeout'
+const errorReasons = ['error', 'timeout', 'unknown'] as const
+export type ErrorReason = typeof errorReasons[number]
 
 export interface ErrorResult extends ResultCommon {
-  status: undefined
+  method: string | undefined
+  status: number | undefined
   reason: ErrorReason
   error: Error
   leaf: true
 }
 
 export function isErrorResult(result: Result): result is ErrorResult {
-  return 'error' in result && !!result.reason
+  return 'error' in result
+}
+
+export interface SkippedResult extends ResultCommon {
+  skipped: true
+  reason: SkipReason
+  leaf: true
+}
+
+const skipReasons = ['disallowed', 'external'] as const
+export type SkipReason = typeof skipReasons[number]
+
+export function isSkippedResult(result: Result): result is SkippedResult {
+  return 'skipped' in result
 }
 
 export interface Chunk {

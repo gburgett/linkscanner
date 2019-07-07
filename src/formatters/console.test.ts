@@ -4,7 +4,7 @@ import { expect } from 'chai'
 import {} from 'mocha'
 
 import { Logger } from '../logger'
-import { Result } from '../model'
+import { Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
 import { ConsoleFormatter } from './console'
 
@@ -17,14 +17,25 @@ describe('ConsoleFormatter', () => {
       } as any,
     })
 
-    instance.write({
+    const successResult: SuccessResult = {
       method: 'GET',
       url: parseUrl('http://www.test.com'),
       host: 'www.test.com',
       status: 200,
       ms: 123,
       links: [parseUrl('http://www.test.com/asdf')],
-    } as Result)
+    } as SuccessResult
+    instance.write(successResult)
+
+    const skippedResult: SkippedResult = {
+      url: parseUrl('http://www.test.com/asdf'),
+      skipped: true,
+      reason: 'disallowed',
+      leaf: true,
+      host: 'www.test.com',
+      parent: successResult,
+    }
+    instance.write(skippedResult)
     instance.end()
 
     await instance.onceAsync('finish')

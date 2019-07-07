@@ -6,7 +6,7 @@ import { } from 'mocha'
 import { wait } from 'async-toolbox'
 import { collect } from 'async-toolbox/stream'
 import { Fetcher, FetchOptions } from './fetcher'
-import { ErrorReason, ErrorResult, Result } from './model'
+import { ErrorReason, ErrorResult, Result, SuccessResult } from './model'
 import { parseUrl } from './url'
 
 // tslint:disable:no-unused-expression
@@ -42,7 +42,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect(result[0].status).to.eq(200)
+    expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('jsonplaceholder.typicode.com')
     expect(result[0].url.toString()).to.eq('https://jsonplaceholder.typicode.com/')
   })
@@ -57,7 +57,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect(result[0].status).to.eq(200)
+    expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/')
 
@@ -76,7 +76,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect(result[0].status).to.eq(200)
+    expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/')
 
@@ -169,7 +169,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect(result[0].status).to.eq(200)
+    expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/some-video')
   })
