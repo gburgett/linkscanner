@@ -8,7 +8,7 @@ import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
 import { Result } from './model'
-import { ProgressBar } from './progress_bar';
+import { ProgressBar } from './progress_bar'
 import { loadSource } from './source'
 import { assign, Options } from './util'
 
@@ -51,6 +51,8 @@ export interface Args {
 class Linkscanner {
   private readonly _options: Args
 
+  private readonly _progress: ProgressBar | undefined
+
   constructor(options: Options<Args>) {
     this._options = assign({
       'hostnames': null,
@@ -70,6 +72,23 @@ class Linkscanner {
         ),
       'logger': defaultLogger,
     }, options)
+
+    if (this._options.progress) {
+      // Attach a progress bar
+      this._progress = new ProgressBar({
+        logger: this._options.logger,
+      })
+      this._options.logger = this._progress
+    }
+
+    if (!this._options.debug) {
+      const subLogger = this._options.logger
+      this._options.logger = {
+        error: subLogger.error.bind(subLogger),
+        log: subLogger.log.bind(subLogger),
+        debug: () => {return},
+      }
+    }
   }
 
   /**
@@ -92,10 +111,8 @@ class Linkscanner {
     sourceStream.pipe(entryStream)
     results.pipe(formatter)
 
-    if (this._options.progress) {
-      // Attach a progress bar
-      const bar = new ProgressBar()
-      results.pipe(bar)
+    if (this._progress) {
+      results.pipe(this._progress)
     }
 
     await onceAsync(formatter, 'finish')

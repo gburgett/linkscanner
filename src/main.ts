@@ -21,10 +21,10 @@ const argv = yargs
     description: 'Print more information in the output results (formatter dependent)',
     alias: 'v',
   })
-  .option('progress', {
+  .option('--no-progress', {
     boolean: true,
-    description: 'Display a progress bar',
-    alias: 'p',
+    description: 'Do not display a progress bar',
+    alias: 'P',
   })
   .option('recursive', {
     boolean: true,
@@ -50,7 +50,6 @@ const argv = yargs
   }).argv
 
 const defaults = {
-  logger: argv.debug ? debugLogger : defaultLogger,
 }
 
 const instance = new Linkscanner({
@@ -61,7 +60,6 @@ const instance = new Linkscanner({
 instance.run(argv._)
   .then(
     () => {
-      defaults.logger.debug('done')
       process.exit(0)
     },
     (ex: any) => {

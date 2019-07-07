@@ -21,7 +21,8 @@ interface ProgressBarState {
   start?: number
 }
 
-export class ProgressBar extends Writable {
+export class ProgressBar extends Writable implements Logger {
+
   private readonly _options: ProgressBarOptions
 
   private readonly state: ProgressBarState = {
@@ -45,18 +46,20 @@ export class ProgressBar extends Writable {
       resultsStream.on('response', this._onResponse)
       this.state.start = isomorphicPerformance.now()
     })
-
-    // 60 frames per second
-    this.render = throttle(this.render, 16)
   }
 
-  public _write(chunk: Result, encoding: string, cb: () => void) {
+  public _write = (chunk: Result, encoding: string, cb: () => void) => {
     this.state.checked.add(chunk.url.toString())
     this.render()
     cb()
   }
 
-  public async render() {
+  public _final(cb: () => void) {
+    this.clear()
+    cb()
+  }
+
+  public render = async () => {
     const {checked, all, latest, isRendered} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
@@ -86,16 +89,15 @@ export class ProgressBar extends Writable {
     msgParts[2] = chalk.cyan(msgParts[2])
     msgParts[3] = chalk.cyan(msgParts[3])
 
-    let msg = msgParts.join('')
-    // clear the current line
-    msg = '\x1b[2K' + msg
-    if (isRendered) {
-      // go up two lines first
-      msg = '\x1b[F\x1b[F' + msg
-    }
-    logger.error(msg)
+    const msg = msgParts.join('')
+    // log a cleared blank line
+    logger.error('\x1b[2k')
+    // clear the current line before writing the msg
+    logger.error('\x1b[2K' + msg)
     // write the latest hit line
-    logger.error(chalk.dim.cyan(latest || ''))
+    logger.error('\x1b[2K' + chalk.dim.cyan(latest || '') +
+      // go up three lines after
+      '\x1b[F\x1b[F\x1b[F')
 
     this.state.isRendered = true
   }
@@ -104,6 +106,26 @@ export class ProgressBar extends Writable {
     if (!this.state.isRendered) {
       return
     }
+
+    const { logger } = this._options
+    logger.error('\x1b[2K\n\x1b[2K\n\x1b[2K\x1b[F\x1b[F\x1b[F')
+  }
+
+  public log(message?: any, ...optionalParams: any[]): void {
+    this.clear()
+    this._options.logger.log(message, ...optionalParams)
+    this.render()
+  }
+
+  public debug(message?: any, ...optionalParams: any[]): void {
+    this.clear()
+    this._options.logger.debug(message, ...optionalParams)
+    this.render()
+  }
+
+  public error(message?: any, ...optionalParams: any[]): void {
+    this._options.logger.error('\x1b[2K' + message, ...optionalParams)
+    this.render()
   }
 
   private _onUrl = ({ url }: { url: URL }) => {
