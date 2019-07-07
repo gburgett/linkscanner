@@ -26,6 +26,11 @@ const argv = yargs
     description: 'Do not display a progress bar',
     alias: 'P',
   })
+  .option('--progress', {
+    boolean: true,
+    description: 'display a progress bar',
+    alias: 'p',
+  })
   .option('recursive', {
     boolean: true,
     description: 'Recursively crawl all links on the same host',
@@ -35,6 +40,19 @@ const argv = yargs
     boolean: true,
     description: 'Do not test links that point to other hosts',
     alias: 'e',
+  })
+  .option('user-agent', {
+    description: 'A user-agent string to be used when sending requests',
+    type: 'string',
+  })
+  .option('max-concurrency', {
+    description: 'The maximum number of simultaneous requests going out from your computer',
+    type: 'number',
+  })
+  .option('headers', {
+    alias: 'H',
+    type: 'string',
+    array: true,
   })
   .option('formatter', {
     alias: 'f',

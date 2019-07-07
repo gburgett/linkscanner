@@ -1,8 +1,12 @@
+import { Limiter, Semaphore } from 'async-toolbox'
 import { onceAsync } from 'async-toolbox/events'
 import { Readable, Writable } from 'async-toolbox/stream'
+import * as crossFetch from 'cross-fetch'
+import { Interval } from 'limiter'
 import { PassThrough } from 'stream'
 
 import { BuildStream } from './build_stream'
+import { FetchInterface } from './fetcher'
 import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
@@ -32,8 +36,14 @@ export interface Args {
   hostnames?: string | string[]
   followRedirects: boolean
   recursive: boolean
-  'exclude-external': boolean
+  excludeExternal: boolean
   include: string[]
+
+  /** The maximum simultaneous fetch requests that can be running. */
+  maxConcurrency: number | { tokens: number, interval: Interval }
+
+  headers: string[]
+  userAgent?: string
 
   formatter?: keyof typeof formatters | Writable<Result>
   /** Formatter option: more output */
@@ -54,22 +64,26 @@ class Linkscanner {
 
   constructor(options: Options<Args>) {
     this._options = assign({
-      'hostnames': null,
-      'followRedirects': false,
-      'recursive': false,
-      'exclude-external': false,
-      'include': [
+      hostnames: null,
+      followRedirects: false,
+      recursive: false,
+      excludeExternal: false,
+      maxConcurrency: 5,
+
+      headers: {},
+      userAgent: undefined,
+      include: [
         'a[href]',
         'link[rel="canonical"]',
       ],
-      'verbose': false,
-      'debug': false,
-      'progress': !!(
+      verbose: false,
+      debug: false,
+      progress: !!(
         !options.debug &&
           typeof process != 'undefined' &&
           process.stderr.isTTY
         ),
-      'logger': defaultLogger,
+      logger: defaultLogger,
     }, options)
 
     if (this._options.progress) {
@@ -141,11 +155,67 @@ class Linkscanner {
       source,
       results: BuildStream(source, {
         ...this._options,
+        fetch: this.fetchInterface(),
         hostnames,
       }),
     }
   }
 
+  private fetchInterface(): FetchInterface {
+    let fetch: FetchInterface = crossFetch
+
+    const {headers, userAgent, maxConcurrency} = this._options
+
+    let headerObj = parseHeaders(headers)
+    if (userAgent) {
+      headerObj = {
+        ...headerObj,
+        'User-Agent': userAgent,
+      }
+    }
+
+    const semaphore: Semaphore =
+      typeof(maxConcurrency) == 'number' ?
+        new Semaphore({
+          tokens: maxConcurrency,
+        }) :
+        new Limiter({
+          tokensPerInterval: maxConcurrency.tokens,
+          interval: maxConcurrency.interval,
+        })
+
+    fetch = {
+      ...fetch,
+      fetch: semaphore.synchronize(fetch.fetch),
+
+      // tslint:disable-next-line: max-classes-per-file
+      Request: class extends fetch.Request {
+        constructor(url: string, requestInit?: RequestInit) {
+          // add in the headers inside the request constructor call
+          requestInit = {
+            ...requestInit,
+            headers: {
+              ...headerObj,
+              ...(requestInit && requestInit.headers),
+            },
+          }
+          super(url, requestInit)
+        }
+      },
+    }
+
+    return fetch
+  }
+
 }
 
 export default Linkscanner
+
+function parseHeaders(headers: string[]): { [key: string]: string } {
+  const result: { [key: string]: string } = {}
+  for (const header of headers) {
+    const [key, ...value] = header.split(':')
+    result[key] = value.join(':').trimLeft()
+  }
+  return result
+}
