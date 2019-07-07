@@ -40,7 +40,7 @@ export function present<T>(value: T | null | undefined): value is T {
   return !!value
 }
 
-export const isomorphicPerformance = typeof (performance) != 'undefined' ?
+export const isomorphicPerformance: { now(): number } = typeof (performance) != 'undefined' ?
   performance :
   // we only get here in nodejs.  Use eval to confuse webpack so it doesn't import
   // the perf_hooks package.

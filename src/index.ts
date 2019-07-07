@@ -1,6 +1,5 @@
 import { onceAsync } from 'async-toolbox/events'
 import { Readable, Writable } from 'async-toolbox/stream'
-import ProgressBar from 'progress'
 import { PassThrough } from 'stream'
 
 import chalk from 'chalk'
@@ -9,8 +8,8 @@ import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
 import { Result } from './model'
+import { ProgressBar } from './progress_bar';
 import { loadSource } from './source'
-import { parseUrl } from './url'
 import { assign, Options } from './util'
 
 const formatters = {
@@ -41,6 +40,7 @@ export interface Args {
   /** Formatter option: more output */
   verbose: boolean,
   debug: boolean
+  progress: boolean
 
   logger: Logger
 }
@@ -63,6 +63,11 @@ class Linkscanner {
       ],
       'verbose': false,
       'debug': false,
+      'progress': !!(
+        !options.debug &&
+          typeof process != 'undefined' &&
+          process.stderr.isTTY
+        ),
       'logger': defaultLogger,
     }, options)
   }
@@ -87,40 +92,10 @@ class Linkscanner {
     sourceStream.pipe(entryStream)
     results.pipe(formatter)
 
-    if (process.stderr.isTTY && !this._options.debug) {
+    if (this._options.progress) {
       // Attach a progress bar
-      const bar = new ProgressBar(chalk`{green :bar} :checked / :all (:elapseds) {cyan.dim :latest}`, {
-        total: 100,
-        width: 20,
-      })
-
-      const checked = new Set<string>()
-      const all = new Set<string>()
-      let latest: string
-      const update = () => {
-        bar.update(checked.size / all.size, {
-          checked: checked.size.toString().padStart(4),
-          all: all.size.toString().padStart(4),
-          latest: latest && (latest.length > 42 ? latest.slice(0, 42) + '...' : latest),
-        })
-      }
-
-      results.on('url', ({url}: { url: URL }) => {
-        all.add(url.toString())
-        update()
-      })
-      results.on('data', (result: Result) => {
-        checked.add(result.url.toString())
-        update()
-      })
-      results.on('fetch', (req: Request) => {
-        latest = `    ${req.url}`
-        update()
-      })
-      results.on('response', (resp: Response, req: Request) => {
-        latest = `${resp.status} ${resp.url || req.url}`
-        update()
-      })
+      const bar = new ProgressBar()
+      results.pipe(bar)
     }
 
     await onceAsync(formatter, 'finish')

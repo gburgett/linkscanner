@@ -21,6 +21,11 @@ const argv = yargs
     description: 'Print more information in the output results (formatter dependent)',
     alias: 'v',
   })
+  .option('progress', {
+    boolean: true,
+    description: 'Display a progress bar',
+    alias: 'p',
+  })
   .option('recursive', {
     boolean: true,
     description: 'Recursively crawl all links on the same host',
