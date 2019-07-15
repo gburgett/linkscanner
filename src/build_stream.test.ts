@@ -25,9 +25,10 @@ describe('BuildStream', () => {
 
     fetchMockSandbox.getOnce('http://test.com/robots.txt', 404)
     fetchMockSandbox.getOnce('http://other.com/robots.txt', `
-    User-agent: *
-    Crawl-delay: 1
-    Disallow: /dir/`)
+User-agent: *
+Crawl-delay: 1
+Disallow: /disallowed/*.php
+Allow: *`)
   })
 
   it('fetches a single URL', async () => {
@@ -150,6 +151,32 @@ describe('BuildStream', () => {
     expect(result.length).to.equal(2)
     expect(result[0].url.toString()).to.eq('http://test.com/testpage/')
     expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
+  })
+
+  it('skips disallowed URLs', async () => {
+    fetchMockSandbox.get('http://test.com/testpage/',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body><a href="http://other.com/disallowed/index.php">Relative Page</a></body></html>`,
+      })
+
+    const source = toReadable(['http://test.com/testpage/'])
+
+    const uut = BuildStream(source, {
+      ...options,
+      recursive: false,
+    })
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(2)
+    expect(result[0].url.toString()).to.eq('http://test.com/testpage/')
+    expect(result[1].url.toString()).to.eq('http://other.com/disallowed/index.php')
+    expect(result[1].type).to.eq('skip')
   })
 
   it('emits URL events on resulting stream', async () => {

@@ -5,6 +5,7 @@ import { Duplex } from 'stream'
 
 import { Fetcher, FetchInterface } from './fetcher'
 import { defaultLogger, Logger } from './logger'
+import { parseUrl, URL } from './url'
 import { assign, Options } from './util'
 
 interface HostnameSetOptions {
@@ -13,6 +14,8 @@ interface HostnameSetOptions {
   logger: Logger
   fetch: FetchInterface
 }
+
+export interface Host { hostname: string, protocol: string, port?: string }
 
 export class HostnameSet {
   private _locks = new Map<string, Semaphore>()
@@ -30,13 +33,13 @@ export class HostnameSet {
       options)
   }
 
-  public async lockFor(hostname: string): Promise<Semaphore> {
-    const existing = this._locks.get(hostname)
+  public async lockFor(host: Host): Promise<Semaphore> {
+    const existing = this._locks.get(hostKey(host))
     if (existing) {
       return existing
     }
 
-    const robots = await this.robotsFor(hostname)
+    const robots = await this.robotsFor(host)
     const crawlDelay = robots.getCrawlDelay(this._options.userAgent || '*')
 
     const semaphore = crawlDelay ?
@@ -46,21 +49,48 @@ export class HostnameSet {
       }) :
       new Semaphore({ tokens: 1 })
 
-    this._locks.set(hostname, semaphore)
+    this._locks.set(hostKey(host), semaphore)
     return semaphore
   }
 
-  public async robotsFor(hostname: string): Promise<Robots> {
-    const existing = this._robots.get(hostname)
+  public async robotsFor(host: Host): Promise<Robots> {
+    const {protocol, hostname, port} = host
+    const robotsFile = parseUrl(`${protocol}//${hostname}/robots.txt`)
+    if (port) {
+      robotsFile.port = port.toString()
+    }
+
+    return await this.fetchRobotsFile(robotsFile)
+  }
+
+  public async streamFor(host: Host): Promise<Duplex> {
+    const existing = this._streams.get(hostKey(host))
+    if (existing) {
+      return existing
+    }
+
+    const stream = new Fetcher({
+      ...this._options,
+      semaphore: await this.lockFor(host),
+    })
+
+    stream.on('end', () => {
+      this._streams.delete(hostKey(host))
+    })
+
+    return stream
+  }
+
+  private fetchRobotsFile = async (robotsFile: URL) => {
+    const existing = this._robots.get(robotsFile.toString())
     if (existing) {
       return existing
     }
 
     const { fetch } = this._options
-    const robotsFile = `http://${hostname}/robots.txt`
     let resp: Response | null = null
     try {
-      resp = await timeout(() => fetch.fetch(new fetch.Request(robotsFile, {
+      resp = await timeout(() => fetch.fetch(new fetch.Request(robotsFile.toString(), {
         redirect: 'follow',
       })), 10000)
     } catch (ex) {
@@ -69,30 +99,20 @@ export class HostnameSet {
 
     let robots: Robots
     if (resp && resp.status >= 200 && resp.status < 300) {
-      robots = robotsParser(robotsFile, await resp.text())
+      robots = robotsParser(robotsFile.toString(), await resp.text())
     } else {
-      robots = robotsParser(robotsFile, '')
+      robots = robotsParser(robotsFile.toString(), '')
     }
 
-    this._robots.set(hostname, robots)
+    this._robots.set(robotsFile.toString(), robots)
     return robots
   }
+}
 
-  public async streamFor(hostname: string): Promise<Duplex> {
-    const existing = this._streams.get(hostname)
-    if (existing) {
-      return existing
-    }
+function exists<T>(value: T | undefined | null): value is T {
+  return !!value
+}
 
-    const stream = new Fetcher({
-      ...this._options,
-      semaphore: await this.lockFor(hostname),
-    })
-
-    stream.on('end', () => {
-      this._streams.delete(hostname)
-    })
-
-    return stream
-  }
+function hostKey({hostname, protocol, port}: Host): string {
+  return [protocol, hostname, port].join('/')
 }

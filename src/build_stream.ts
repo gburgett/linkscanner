@@ -4,7 +4,7 @@ import * as crossFetch from 'cross-fetch'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { EventForwarder, StreamEvents } from './event_forwarder'
 import { FetchInterface } from './fetcher'
-import { HostnameSet } from './hostname_set'
+import { Host, HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result, SkippedResult, SuccessResult } from './model'
 import { handleEOF, Reentry } from './reentry'
@@ -90,12 +90,22 @@ export function BuildStream(
 
   // The fetcher performs the heavy lifting of invoking fetch
   const fetcher = reentry
-    .pipe(new DivergentStreamWrapper({
+    .pipe(new DivergentStreamWrapper<Host>({
       objectMode: true,
-      hashChunk: (chunk: Chunk) => {
-        return chunk.url.hostname
+      getKey: (chunk: Chunk) => {
+        return {
+          hostname: chunk.url.hostname,
+          protocol: chunk.url.protocol,
+          port: chunk.url.port,
+          hash() {
+            // parallelize streams by protocol, hostname, and port.  This uniquely
+            // describes a server.
+            const {hostname, protocol, port} = this
+            return [hostname, protocol, port].join('/')
+          },
+        }
       },
-      createStream: (hostname) => hostnameSet.streamFor(hostname),
+      createStream: (host) => hostnameSet.streamFor(host),
     }))
 
   // The results come out of the fetcher, piping EOF tokens back to the Reentry
@@ -120,37 +130,7 @@ export function BuildStream(
 
   // Whenever the fetcher generates a URL, we may need to feed it back to the
   // Reentry for recursive fetching.
-  fetcher.on('url', ({ url, parent }: { url: URL, parent: SuccessResult }) => {
-    if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
-      // only scan URLs matching our known hostnames
-      const result: SkippedResult = {
-        url,
-        parent,
-        host: url.hostname,
-        leaf: true,
-        skipped: true,
-        reason: 'external',
-      }
-      results.write(result)
-      return
-    }
-
-    if (!options.recursive && !sourceUrls.has(parent.url.toString())) {
-      // Do not scan URLs that didn't come straight from one of our source URLs.
-      logger.debug('recursive', url.toString(), parent.url.toString())
-      return
-    }
-    const isLeafNode: boolean =
-      // external URLs are always leafs
-      !hostnameSet.hostnames.has(url.hostname) ||
-      // If not recursive, any URL found on a page is a leaf node
-      !options.recursive
-    if (isLeafNode) {
-      logger.debug('leaf', url.toString())
-    }
-
-    reentry.write({ url, parent, leaf: isLeafNode })
-  })
+  fetcher.on('url', onUrl)
 
   // debugStreams({
   //   source,
@@ -166,4 +146,70 @@ export function BuildStream(
 
   // The CLI or consuming program needs the readable stream of results
   return results
+
+  async function onUrl({ url, parent }: { url: URL, parent: SuccessResult }) {
+    try {
+      if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
+        // only scan URLs matching our known hostnames
+        const result: SkippedResult = {
+          type: 'skip',
+          url,
+          parent,
+          host: url.hostname,
+          leaf: true,
+          reason: 'external',
+        }
+        logger.debug('external', url.toString())
+        results.write(result)
+        return
+      }
+
+      if (!options.recursive && !sourceUrls.has(parent.url.toString())) {
+        // Do not scan URLs that didn't come straight from one of our source URLs.
+        logger.debug('recursive', url.toString(), parent.url.toString())
+        return
+      }
+
+      const isLeafNode: boolean =
+        // external URLs are always leafs
+        !hostnameSet.hostnames.has(url.hostname) ||
+        // If not recursive, any URL found on a page is a leaf node
+        !options.recursive
+      if (isLeafNode) {
+        logger.debug('leaf', url.toString())
+      }
+
+      const robots = await hostnameSet.robotsFor(url)
+      if (robots.isAllowed(url.toString()) === false) {
+        const result: SkippedResult = {
+          type: 'skip',
+          url,
+          parent,
+          host: url.hostname,
+          leaf: true,
+          reason: 'disallowed',
+        }
+        logger.debug('disallowed', url.toString(), robots.isDisallowed(url.toString()))
+        results.write(result)
+        return
+      }
+      logger.debug('allowed', url.toString(), robots.isAllowed(url.toString()), robots.isDisallowed(url.toString()))
+
+      reentry.write({ url, parent, leaf: isLeafNode })
+    } catch (ex) {
+      logger.error(ex)
+    }
+  }
+}
+
+class HostChunk implements Host {
+  public readonly hostname: string
+  public readonly protocol: string
+  public readonly port?: string | undefined
+
+  constructor(url: URL) {
+    this.hostname = url.hostname,
+    this.protocol = url.protocol
+    this.port = url.port
+  }
 }

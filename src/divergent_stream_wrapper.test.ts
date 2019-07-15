@@ -4,6 +4,7 @@ import { } from 'mocha'
 import { wait, waitUntil } from 'async-toolbox'
 import {  ParallelTransform } from 'async-toolbox/stream'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
+import { Host } from './hostname_set'
 import { Chunk } from './model'
 import { EOF } from './reentry'
 import { parseUrl } from './url'
@@ -17,20 +18,24 @@ describe('DivergentStreamWrapper', () => {
       const streams: { [hash: string]: Array<(result?: any) => void> } = {}
 
       const collected = [] as any[]
-      const instance = new DivergentStreamWrapper({
+      const instance = new DivergentStreamWrapper<{hostname: string}>({
         objectMode: true,
-        hashChunk: (chunk: Chunk) => {
-          return chunk.url.hostname
+        getKey: (chunk: Chunk) => {
+          return {
+            hostname: chunk.url.hostname,
+            hash() { return this.hostname },
+          }
         },
-        createStream: (hash) => {
+        createStream: (key) => {
+          console.log('key', key)
           return new ParallelTransform({
             objectMode: true,
             highWaterMark: 1,
             maxParallelChunks: 2,
             async transformAsync(chunk, encoding) {
-              streams[hash] = streams[hash] || []
+              streams[key.hostname] = streams[key.hostname] || []
               const result = await new Promise<any>((resolve) =>
-                streams[hash].push(resolve),
+                streams[key.hostname].push(resolve),
               )
               if (result) {
                 this.push(result)
@@ -69,20 +74,25 @@ describe('DivergentStreamWrapper', () => {
       const streams: { [hash: string]: Array<(result?: any) => void> } = {}
 
       const collected = [] as any[]
-      const instance = new DivergentStreamWrapper({
+      const instance = new DivergentStreamWrapper<{hostname: string}>({
         objectMode: true,
-        hashChunk: (chunk: Chunk) => {
-          return chunk.url.hostname
+        getKey: (chunk: Chunk) => {
+          return {
+            hostname: chunk.url.hostname,
+            hash() {
+              return this.hostname
+            },
+          }
         },
-        createStream: (hash) => {
+        createStream: (key) => {
           return new ParallelTransform({
             objectMode: true,
             highWaterMark: 1,
             maxParallelChunks: 2,
             async transformAsync(chunk, encoding) {
-              streams[hash] = streams[hash] || []
+              streams[key.hostname] = streams[key.hostname] || []
               const result = await new Promise<any>((resolve) =>
-                streams[hash].push(resolve),
+                streams[key.hostname].push(resolve),
               )
               if (result) {
                 this.push(result)

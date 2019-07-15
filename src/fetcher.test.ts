@@ -42,6 +42,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
+    expect(result[0].type).to.eq('success')
     expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('jsonplaceholder.typicode.com')
     expect(result[0].url.toString()).to.eq('https://jsonplaceholder.typicode.com/')
@@ -76,6 +77,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
+    expect(result[0].type).to.eq('success')
     expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/')
@@ -169,6 +171,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
+    expect(result[0].type).to.eq('success')
     expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/some-video')
