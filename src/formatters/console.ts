@@ -128,6 +128,7 @@ export class ConsoleFormatter extends Writable {
         excluded.url.toString() == r.toString()))
 
     brokenResults.push(...unknownResults.map<ErrorResult>((r) => ({
+      type: 'error',
       url: r,
       method: undefined,
       status: undefined,

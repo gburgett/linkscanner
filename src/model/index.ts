@@ -9,6 +9,7 @@ interface ResultCommon {
 }
 
 export interface SuccessResult extends ResultCommon {
+  type: 'success'
   method: string
   status: number
   ms: number
@@ -17,14 +18,14 @@ export interface SuccessResult extends ResultCommon {
 }
 
 export function isSuccessResult(result: Result): result is SuccessResult {
-  return 'status' in result && result.status !== undefined && result.status !== null
-    && !('error' in result)
+  return result.type == 'success'
 }
 
 const errorReasons = ['error', 'timeout', 'unknown'] as const
 export type ErrorReason = typeof errorReasons[number]
 
 export interface ErrorResult extends ResultCommon {
+  type: 'error'
   method: string | undefined
   status: number | undefined
   reason: ErrorReason
@@ -33,11 +34,11 @@ export interface ErrorResult extends ResultCommon {
 }
 
 export function isErrorResult(result: Result): result is ErrorResult {
-  return 'error' in result
+  return result.type == 'error'
 }
 
 export interface SkippedResult extends ResultCommon {
-  skipped: true
+  type: 'skip'
   reason: SkipReason
   leaf: true
 }
@@ -46,7 +47,7 @@ const skipReasons = ['disallowed', 'external'] as const
 export type SkipReason = typeof skipReasons[number]
 
 export function isSkippedResult(result: Result): result is SkippedResult {
-  return 'skipped' in result
+  return result.type == 'skip'
 }
 
 export interface Chunk {

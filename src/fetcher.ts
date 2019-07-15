@@ -94,6 +94,7 @@ export class Fetcher extends ParallelTransform {
     } catch (ex) {
       const errorResult: ErrorResult = {
         ...partialResult,
+        type: 'error',
         leaf: true,
         status: undefined,
         reason: ex.name == 'TimeoutError' ? 'timeout' : 'error',
@@ -129,6 +130,7 @@ export class Fetcher extends ParallelTransform {
 
     // Assign back to the same object, so that the emitted object tree is maintained.
     const fullResult: Result = Object.assign(partialResult, {
+      type: 'success' as const,
       status: response.status,
       ms: end - start,
     })
@@ -143,6 +145,7 @@ export class Fetcher extends ParallelTransform {
         } catch (ex) {
           const error: ErrorResult = {
             ...fullResult,
+            type: 'error',
             leaf: true,
             reason: 'error',
             error: new Error(`${fullResult.status}: bad location header '${location}'`),
@@ -155,6 +158,7 @@ export class Fetcher extends ParallelTransform {
       } else {
         const error: ErrorResult = {
           ...fullResult,
+          type: 'error',
           leaf: true,
           reason: 'error',
           error: new Error(`${fullResult.status}: missing location header`),

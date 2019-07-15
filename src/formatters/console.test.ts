@@ -29,7 +29,7 @@ describe('ConsoleFormatter', () => {
 
     const skippedResult: SkippedResult = {
       url: parseUrl('http://www.test.com/asdf'),
-      skipped: true,
+      type: 'skip',
       reason: 'disallowed',
       leaf: true,
       host: 'www.test.com',
@@ -58,6 +58,7 @@ describe('ConsoleFormatter', () => {
     })
 
     const parent: Result = {
+      type: 'success',
       method: 'GET',
       url: parseUrl('http://www.test.com'),
       host: 'www.test.com',
@@ -69,6 +70,7 @@ describe('ConsoleFormatter', () => {
     instance.write(parent)
 
     instance.write({
+      type: 'success',
       leaf: true,
       parent,
       method: 'HEAD',
@@ -99,6 +101,7 @@ describe('ConsoleFormatter', () => {
     })
 
     const parent: Result = {
+      type: 'success',
       method: 'GET',
       url: parseUrl('http://www.test.com'),
       host: 'www.test.com',
@@ -108,6 +111,7 @@ describe('ConsoleFormatter', () => {
     }
     const child1: Result = {
       parent,
+      type: 'success',
       method: 'GET',
       url: parseUrl('http://www.test2.com'),
       host: 'www.test2.com',
@@ -116,6 +120,7 @@ describe('ConsoleFormatter', () => {
       links: [parseUrl('http://www.test3.com')],
     }
     const child2: Result = {
+      type: 'success',
       leaf: true,
       parent: child1,
       method: 'HEAD',
