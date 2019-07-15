@@ -90,21 +90,8 @@ export function BuildStream(
 
   // The fetcher performs the heavy lifting of invoking fetch
   const fetcher = reentry
-    .pipe(new DivergentStreamWrapper<Host>({
+    .pipe(new DivergentStreamWrapper({
       objectMode: true,
-      getKey: (chunk: Chunk) => {
-        return {
-          hostname: chunk.url.hostname,
-          protocol: chunk.url.protocol,
-          port: chunk.url.port,
-          hash() {
-            // parallelize streams by protocol, hostname, and port.  This uniquely
-            // describes a server.
-            const {hostname, protocol, port} = this
-            return [hostname, protocol, port].join('/')
-          },
-        }
-      },
       createStream: (host) => hostnameSet.streamFor(host),
     }))
 

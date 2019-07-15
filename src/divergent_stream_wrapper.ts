@@ -4,37 +4,36 @@ import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/strea
 import { Duplex } from 'stream'
 
 import { EventForwarder, StreamEvents } from './event_forwarder'
+import { Host } from './hostname_set'
+import { Chunk } from './model'
 import { EOF, isEOF } from './reentry'
 
 type Hashable<T> = (T & {hash(this: T): string})
-type GetKey<T> = (chunk: any) => Hashable<T> | Array<Hashable<T>>
-type CreateStream<T> = (hash: Hashable<T>) => Duplex | Promise<Duplex>
+type CreateStream = (hash: Hashable<Host>) => Duplex | Promise<Duplex>
 
-type CreateStreamOptions<T> = ParallelTransformOptions & {
-  semaphore?: (hash: T) => Semaphore,
+type CreateStreamOptions = ParallelTransformOptions & {
+  semaphore?: (host: Host) => Semaphore,
 }
 
-type DivergentStreamWrapperOptions<T> =
+type DivergentStreamWrapperOptions =
   ParallelTransformOptions &
-  CreateStreamOptions<T> &
+  CreateStreamOptions &
   {
-    getKey: GetKey<T>,
-    createStream?: CreateStream<T>,
+    createStream?: CreateStream,
   }
 
-export class DivergentStreamWrapper<T = string> extends ParallelTransform {
+export class DivergentStreamWrapper extends ParallelTransform {
   public static readonly ALL = Symbol('All Hosts')
 
-  private readonly _getKey: GetKey<T>
   private readonly _streams: Map<string, Duplex>
-  private readonly _createStreamOptions: CreateStreamOptions<T>
+  private readonly _createStreamOptions: CreateStreamOptions
   private readonly _forwarder = new EventForwarder({
       // Don't forward the normal stream events from inner streams, just the
       // special Linkscanner events
       ignore: StreamEvents,
     }).to(this)
 
-  constructor(options: DivergentStreamWrapperOptions<T>) {
+  constructor(options: DivergentStreamWrapperOptions) {
     super({
       objectMode: true,
       // only one _transformAsync at a time, i.e. we block upstream if any of our
@@ -43,14 +42,12 @@ export class DivergentStreamWrapper<T = string> extends ParallelTransform {
       highWaterMark: 1,
     })
     const {
-      getKey: hashChunk,
       createStream,
       ...createStreamOptions
     } = options
 
     this._createStreamOptions = createStreamOptions
     this._streams = new Map<string, Duplex>()
-    this._getKey = hashChunk
     if (createStream) {
       this._createStream = createStream
     }
@@ -73,10 +70,8 @@ export class DivergentStreamWrapper<T = string> extends ParallelTransform {
       return
     }
 
-    // Block until all our streams for this chunk can accept another chunk
-    await Promise.all(
-      this._streamsFor(chunk).map(async (stream) => (await stream).writeAsync(chunk)),
-    )
+    const stream = await this._streamFor(chunk)
+    await stream.writeAsync(chunk)
   }
 
   public async _flushAsync() {
@@ -88,25 +83,22 @@ export class DivergentStreamWrapper<T = string> extends ParallelTransform {
     await Promise.all(promises)
   }
 
-  private _streamsFor(chunk: any): Array<Promise<Duplex>> {
-    const rawKey = this._getKey(chunk)
-    const keys = Array.isArray(rawKey) ? rawKey : [rawKey]
+  private async _streamFor(chunk: any): Promise<Duplex> {
+    const key = this._getKey(chunk)
 
-    return keys.map(async (key) => {
-      const hash: string = key.hash()
-      const existing = this._streams.get(hash)
-      if (existing) {
-        return existing
-      }
+    const hash: string = key.hash()
+    const existing = this._streams.get(hash)
+    if (existing) {
+      return existing
+    }
 
-      const innerStream = await this._createStream(key)
+    const innerStream = await this._createStream(key)
 
-      this._forwarder.from(innerStream)
+    this._forwarder.from(innerStream)
 
-      this._streams.set(hash.toString(), innerStream)
-      this._registerNewStream(innerStream, hash)
-      return innerStream
-    })
+    this._streams.set(hash.toString(), innerStream)
+    this._registerNewStream(innerStream, hash)
+    return innerStream
   }
 
   private _registerNewStream(stream: Duplex, hash?: string) {
@@ -119,10 +111,24 @@ export class DivergentStreamWrapper<T = string> extends ParallelTransform {
     }
   }
 
-  private _createStream(hash: T): Duplex | Promise<Duplex> {
+  private _createStream(host: Host): Duplex | Promise<Duplex> {
     return new ParallelTransform({
       ...this._createStreamOptions,
-      semaphore: this._createStreamOptions.semaphore ? this._createStreamOptions.semaphore(hash) : undefined,
+      semaphore: this._createStreamOptions.semaphore ? this._createStreamOptions.semaphore(host) : undefined,
     })
+  }
+
+  private _getKey = (chunk: Chunk): Hashable<Host> => {
+    return {
+      hostname: chunk.url.hostname,
+      protocol: chunk.url.protocol,
+      port: chunk.url.port,
+      hash() {
+        // parallelize streams by protocol, hostname, and port.  This uniquely
+        // describes a server.
+        const {hostname, protocol, port} = this
+        return [hostname, protocol, port].join('/')
+      },
+    }
   }
 }
