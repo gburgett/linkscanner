@@ -2,8 +2,8 @@ import { ParallelTransform, Readable } from 'async-toolbox/stream'
 import * as crossFetch from 'cross-fetch'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
-import { EventForwarder, StreamEvents } from './event_forwarder'
-import { FetchInterface } from './fetcher'
+import { EventForwarder } from './event_forwarder'
+import { FetchInterface } from './fetch_interface'
 import { Host, HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, Result, SkippedResult, SuccessResult } from './model'
@@ -199,17 +199,5 @@ export function BuildStream(
     } catch (ex) {
       logger.error(ex)
     }
-  }
-}
-
-class HostChunk implements Host {
-  public readonly hostname: string
-  public readonly protocol: string
-  public readonly port?: string | undefined
-
-  constructor(url: URL) {
-    this.hostname = url.hostname,
-    this.protocol = url.protocol
-    this.port = url.port
   }
 }

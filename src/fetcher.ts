@@ -1,9 +1,9 @@
 import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
 require('es6-promise/auto')
-import { ReadLock, timeout } from 'async-toolbox'
-import * as crossFetch from 'cross-fetch'
+import { ReadLock } from 'async-toolbox'
 import 'cross-fetch/polyfill'
 
+import { defaultFetchInterface, FetchInterface } from './fetch_interface'
 import { defaultLogger, Logger } from './logger'
 import { Chunk, ErrorResult, Result } from './model'
 import { defaultParsers, findParser, ParserOptions, Parsers } from './parsers'
@@ -11,17 +11,11 @@ import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
 import { assign, isomorphicPerformance, Options } from './util'
 
-export interface FetchInterface {
-  fetch: (input: Request) => Promise<Response>,
-  Request: new (url: string, requestInit?: RequestInit) => Request,
-}
-
 export interface FetchOptions extends ParallelTransformOptions {
   objectMode: true
 
   acceptMimeTypes: string[]
   followRedirects: boolean
-  timeout: number
 
   parsers: Parsers
   logger: Logger
@@ -40,7 +34,7 @@ export class Fetcher extends ParallelTransform {
         parsers: defaultParsers(options),
         acceptMimeTypes: ['text/html', 'application/json'],
         // default to the global fetch
-        fetch: crossFetch,
+        fetch: defaultFetchInterface,
       },
       options,
       {
@@ -90,7 +84,7 @@ export class Fetcher extends ParallelTransform {
     let response: Response
     try {
       this.emit('fetch', request)
-      response = await timeout(() => fetch(request), this.options.timeout)
+      response = await fetch(request)
     } catch (ex) {
       const errorResult: ErrorResult = {
         ...partialResult,

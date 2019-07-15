@@ -1,9 +1,10 @@
-import { Limiter, Semaphore, timeout } from 'async-toolbox'
+import { Limiter, Semaphore } from 'async-toolbox'
 import * as crossFetch from 'cross-fetch'
 import robotsParser, { Robots } from 'robots-parser'
 import { Duplex } from 'stream'
 
-import { Fetcher, FetchInterface } from './fetcher'
+import { FetchInterface } from './fetch_interface'
+import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
 import { parseUrl, URL } from './url'
 import { assign, Options } from './util'
@@ -90,9 +91,9 @@ export class HostnameSet {
     const { fetch } = this._options
     let resp: Response | null = null
     try {
-      resp = await timeout(() => fetch.fetch(new fetch.Request(robotsFile.toString(), {
+      resp = await fetch.fetch(new fetch.Request(robotsFile.toString(), {
         redirect: 'follow',
-      })), 10000)
+      }))
     } catch (ex) {
       this._options.logger.error(`Error fetching robots.txt: ${ex}`)
     }

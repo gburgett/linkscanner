@@ -1,12 +1,12 @@
+import { wait } from 'async-toolbox'
+import { collect } from 'async-toolbox/stream'
 import { expect } from 'chai'
-import * as crossFetch from 'cross-fetch'
 import fetchMock from 'fetch-mock'
 import { } from 'mocha'
 
-import { wait } from 'async-toolbox'
-import { collect } from 'async-toolbox/stream'
+import { FetchInterfaceWrapper } from './fetch_interface'
 import { Fetcher, FetchOptions } from './fetcher'
-import { ErrorReason, ErrorResult, Result, SuccessResult } from './model'
+import { ErrorResult, Result, SuccessResult } from './model'
 import { parseUrl } from './url'
 
 // tslint:disable:no-unused-expression
@@ -19,7 +19,6 @@ describe('Fetcher', () => {
       fetchMockSandbox = fetchMock.sandbox()
       options = {
         fetch: {
-          ...crossFetch,
           fetch: fetchMockSandbox,
           Request: fetchMock.config.Request!,
         },
@@ -129,7 +128,9 @@ describe('Fetcher', () => {
 
   it('pushes a timeout result', async () => {
     const uut = instance({
-      timeout: 10,
+      fetch: new FetchInterfaceWrapper(options.fetch!, {
+        timeout: 10,
+      }),
     })
 
     fetchMockSandbox.getOnce('http://other.com', async () => {

@@ -1,4 +1,3 @@
-import { Limiter, Semaphore } from 'async-toolbox'
 import { onceAsync } from 'async-toolbox/events'
 import { Readable, Writable } from 'async-toolbox/stream'
 import * as crossFetch from 'cross-fetch'
@@ -6,7 +5,7 @@ import { Interval } from 'limiter'
 import { PassThrough } from 'stream'
 
 import { BuildStream } from './build_stream'
-import { FetchInterface } from './fetcher'
+import { FetchInterface, FetchInterfaceWrapper } from './fetch_interface'
 import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
 import { defaultLogger, Logger } from './logger'
@@ -41,6 +40,7 @@ export interface Args {
 
   /** The maximum simultaneous fetch requests that can be running. */
   maxConcurrency: number | { tokens: number, interval: Interval }
+  timeout: number
 
   headers: string[]
   userAgent?: string
@@ -69,6 +69,7 @@ class Linkscanner {
       recursive: false,
       excludeExternal: false,
       maxConcurrency: 5,
+      timeout: 10000,
 
       headers: {},
       userAgent: undefined,
@@ -162,9 +163,9 @@ class Linkscanner {
   }
 
   private fetchInterface(): FetchInterface {
-    let fetch: FetchInterface = crossFetch
+    const fetch: FetchInterface = crossFetch
 
-    const {headers, userAgent, maxConcurrency} = this._options
+    const {headers, userAgent, maxConcurrency, timeout} = this._options
 
     let headerObj = parseHeaders(headers)
     if (userAgent) {
@@ -174,39 +175,12 @@ class Linkscanner {
       }
     }
 
-    const semaphore: Semaphore =
-      typeof(maxConcurrency) == 'number' ?
-        new Semaphore({
-          tokens: maxConcurrency,
-        }) :
-        new Limiter({
-          tokensPerInterval: maxConcurrency.tokens,
-          interval: maxConcurrency.interval,
-        })
-
-    fetch = {
-      ...fetch,
-      fetch: semaphore.synchronize(fetch.fetch),
-
-      // tslint:disable-next-line: max-classes-per-file
-      Request: class extends fetch.Request {
-        constructor(url: string, requestInit?: RequestInit) {
-          // add in the headers inside the request constructor call
-          requestInit = {
-            ...requestInit,
-            headers: {
-              ...headerObj,
-              ...(requestInit && requestInit.headers),
-            },
-          }
-          super(url, requestInit)
-        }
-      },
-    }
-
-    return fetch
+    return new FetchInterfaceWrapper(fetch, {
+      headers: headerObj,
+      maxConcurrency,
+      timeout,
+    })
   }
-
 }
 
 export default Linkscanner
