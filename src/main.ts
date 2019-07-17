@@ -1,7 +1,6 @@
 import yargs from 'yargs'
 
 import Linkscanner from '.'
-import { debugLogger, defaultLogger } from './logger'
 
 const argv = yargs
   .command('$0', 'Scans a web page for broken links')
@@ -67,15 +66,9 @@ const argv = yargs
     choices: ['a', 'link', 'img', 'script', 'form', 'iframe', 'all'],
   }).argv
 
-const defaults = {
-}
-
-const instance = new Linkscanner({
-  ...defaults,
-  ...argv,
-})
-
-instance.run(argv._)
+Linkscanner.run(argv._, {
+    ...argv,
+  })
   .then(
     () => {
       process.exit(0)

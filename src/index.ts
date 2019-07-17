@@ -2,13 +2,14 @@ import { onceAsync } from 'async-toolbox/events'
 import { Readable, Writable } from 'async-toolbox/stream'
 import * as crossFetch from 'cross-fetch'
 import { Interval } from 'limiter'
-import { PassThrough } from 'stream'
+import { PassThrough, Transform, TransformCallback } from 'stream'
 
-import { BuildStream } from './build_stream'
+import { BuildPipeline as BuildPipeline } from './build_pipeline'
+import { EventForwarder } from './event_forwarder'
 import { FetchInterface, FetchInterfaceWrapper } from './fetch_interface'
 import { ConsoleFormatter } from './formatters/console'
 import { TableFormatter } from './formatters/table'
-import { defaultLogger, Logger } from './logger'
+import { debugLogger, defaultLogger, Logger } from './logger'
 import { Result } from './model'
 import { ProgressBar } from './progress_bar'
 import { loadSource } from './source'
@@ -31,7 +32,7 @@ const defaultFormatter = (args: Args) => {
   return new TableFormatter(args)
 }
 
-export interface Args {
+interface LinkscannerOptions {
   hostnames?: string | string[]
   followRedirects: boolean
   recursive: boolean
@@ -45,121 +46,153 @@ export interface Args {
   headers: string[]
   userAgent?: string
 
-  formatter?: keyof typeof formatters | Writable<Result>
-  /** Formatter option: more output */
-  verbose: boolean,
-  debug: boolean
-  progress: boolean
-
   logger: Logger
 }
 
+const linkscannerDefaults: Readonly<LinkscannerOptions> = {
+  followRedirects: false,
+  recursive: false,
+  excludeExternal: false,
+  maxConcurrency: 5,
+  timeout: 10000,
+
+  headers: [],
+  userAgent: undefined,
+  include: [
+    'a[href]',
+    'link[rel="canonical"]',
+  ],
+  logger: defaultLogger,
+}
+
+export interface Args extends LinkscannerOptions {
+  formatter?: keyof typeof formatters | Writable<Result>
+  /** Formatter option: more output */
+  verbose: boolean,
+
+  debug: boolean
+  progress: boolean
+}
+
+const runDefaults: Readonly<Args> = {
+  ...linkscannerDefaults,
+  verbose: false,
+  debug: false,
+  progress: !!(
+      typeof process != 'undefined' &&
+      process.stderr.isTTY
+    ),
+}
+
 /**
- * Create a Linkscanner run by instantiating this class and calling `await run('https://the-url')`.
+ * A Linkscanner instance is a Transform stream that wraps the linkscanner pipeline.
+ * URLs can be written one at a time (in object mode) to the Linkscanner, and
+ * scanned results can be read out.
  */
-class Linkscanner {
-  private readonly _options: Args
-
-  private readonly _progress: ProgressBar | undefined
-
-  constructor(options: Options<Args>) {
-    this._options = assign({
-      hostnames: null,
-      followRedirects: false,
-      recursive: false,
-      excludeExternal: false,
-      maxConcurrency: 5,
-      timeout: 10000,
-
-      headers: {},
-      userAgent: undefined,
-      include: [
-        'a[href]',
-        'link[rel="canonical"]',
-      ],
-      verbose: false,
-      debug: false,
-      progress: !!(
-        !options.debug &&
-          typeof process != 'undefined' &&
-          process.stderr.isTTY
-        ),
-      logger: defaultLogger,
-    }, options)
-
-    if (this._options.progress) {
-      // Attach a progress bar
-      this._progress = new ProgressBar({
-        logger: this._options.logger,
-      })
-      this._options.logger = this._progress
-    }
-
-    if (!this._options.debug) {
-      const subLogger = this._options.logger
-      this._options.logger = {
-        error: subLogger.error.bind(subLogger),
-        log: subLogger.log.bind(subLogger),
-        debug: () => {return},
-      }
-    }
-  }
+class Linkscanner extends Transform {
 
   /**
    * Runs the link checker over the given URLs, returning a promise which
    * completes when the configured formatter is done writing the last results.
    */
-  public run = async (source: string | string[]): Promise<void> => {
-    const formatterName = this._options.formatter
+  public static async run(source: string | string[], args?: Options<Args>): Promise<void> {
+    const options: Args = assign({},
+      runDefaults,
+      args && ({
+        progress: runDefaults.progress && !args.debug,
+        logger: args.debug ? debugLogger : defaultLogger,
+      }),
+      args)
+
+    let progress: ProgressBar | undefined
+    if (options.progress) {
+      // Attach a progress bar
+      progress = new ProgressBar({
+        logger: options.logger,
+      })
+      options.logger = progress
+    }
+
+    if (!options.debug) {
+      const subLogger = options.logger
+      options.logger = {
+        error: subLogger.error.bind(subLogger),
+        log: subLogger.log.bind(subLogger),
+        debug: () => {return},
+      }
+    }
+
+    const formatterName = options.formatter
     const formatter: Writable<Result> = (
       typeof(formatterName) == 'object' ?
         formatterName
-        : formatterName && formatters[formatterName] && formatters[formatterName](this._options)
-    ) || defaultFormatter(this._options)
+        : formatterName && formatters[formatterName] && formatters[formatterName](options)
+    ) || defaultFormatter(options)
 
     const sourceStream = loadSource({ source })
 
-    const { source: entryStream, results } = this.buildStream()
+    const linkscanner = new Linkscanner(options)
 
     // pipe all the streams together
-    sourceStream.pipe(entryStream)
-    results.pipe(formatter)
+    const results = sourceStream
+      .pipe(linkscanner)
+      .pipe(formatter)
 
-    if (this._progress) {
-      results.pipe(this._progress)
+    if (progress) {
+      linkscanner.pipe(progress)
     }
 
-    await onceAsync(formatter, 'finish')
+    await onceAsync(results, 'finish')
   }
 
-  /**
-   * The programmatic interface to the Linkchecker - the returned pair of streams
-   * allow you to pipe URLs to the source and pipe the results wherever you'd like.
-   * In fact the `run` method uses this internally.
-   *
-   * @example
-   *   const { source, results } = this.buildStream()
-   *   toReadable(['https://www.google.com']).pipe(source)
-   *   const formatter = new ConsoleFormatter()
-   *   results.pipe(formatter)
-   *   await onceAsync(formatter, 'finish')
-   */
-  public buildStream = (): { source: Writable<string>, results: Readable<Result> } => {
+  private readonly _options: LinkscannerOptions
+  private readonly _source: PassThrough = new PassThrough({
+    objectMode: true,
+    highWaterMark: 0,
+  })
+  private readonly _results: Readable<Result>
+
+  constructor(options: Options<LinkscannerOptions>) {
+    super({
+      readableObjectMode: true,
+      writableObjectMode: true,
+      highWaterMark: 0,
+    })
+    this._options = assign({},
+      linkscannerDefaults,
+      options)
+
+    this._results = this.initPipeline()
+  }
+
+  public _transform(chunk: any, encoding: string, cb: TransformCallback): void {
+    this._source.write(chunk, encoding, cb)
+  }
+
+  public _flush(cb: TransformCallback): void {
+    this._results.on('end', () => { cb() })
+    this._source.end()
+  }
+
+  private initPipeline() {
     const hostnames = this._options.hostnames ?
       new Set(Array.from(this._options.hostnames)) : undefined
-
-    const source = new PassThrough({
-      objectMode: true,
-      highWaterMark: 1,
+    const results = BuildPipeline(this._source, {
+      ...this._options,
+      fetch: this.fetchInterface(),
+      hostnames,
     })
-    return {
-      source,
-      results: BuildStream(source, {
-        ...this._options,
-        fetch: this.fetchInterface(),
-        hostnames,
-      }),
-    }
+
+    results.on('data', (transformedChunk) => this.push(transformedChunk))
+    results.on('error', (err) => this.emit('error', err))
+
+    new EventForwarder({
+      only: ['url', 'fetch', 'response'],
+    })
+      .from(results)
+      .to(this)
+
+    return results
   }
 
   private fetchInterface(): FetchInterface {

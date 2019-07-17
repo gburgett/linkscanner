@@ -4,14 +4,14 @@ import * as crossFetch from 'cross-fetch'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { EventForwarder } from './event_forwarder'
 import { FetchInterface } from './fetch_interface'
-import { Host, HostnameSet } from './hostname_set'
+import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
-import { Chunk, Result, SkippedResult, SuccessResult } from './model'
+import { Result, SkippedResult, SuccessResult } from './model'
 import { handleEOF, Reentry } from './reentry'
 import { parseUrl, parseUrls, URL } from './url'
 import { assign, Options } from './util'
 
-export interface BuildStreamOptions {
+export interface BuildPipelineOptions {
   hostnames: Set<string>
   followRedirects: boolean
   recursive: boolean
@@ -24,10 +24,10 @@ export interface BuildStreamOptions {
 /**
  * The core of the linkchecker - Builds a pipeline from a readable source of URLs
  */
-export function BuildStream(
+export function BuildPipeline(
   /** A Readable object mode stream which pushes out a single URL per chunk */
   source: Readable<string>,
-  args?: Options<BuildStreamOptions>,
+  args?: Options<BuildPipelineOptions>,
 ): Readable<Result> {
   const {
     hostnames,

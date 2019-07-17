@@ -1,16 +1,16 @@
+import { onceAsync } from 'async-toolbox/events'
+import { collect, toReadable } from 'async-toolbox/stream'
 import { expect } from 'chai'
-import * as crossFetch from 'cross-fetch'
 import fetchMock from 'fetch-mock'
 import { } from 'mocha'
 
-import { onceAsync } from 'async-toolbox/events'
-import { collect, toReadable } from 'async-toolbox/stream'
-import { BuildStream, BuildStreamOptions } from './build_stream'
+import { BuildPipeline, BuildPipelineOptions } from './build_pipeline'
 import { Result, SuccessResult } from './model'
 import { Options } from './util'
 
-describe('BuildStream', () => {
-  let options: Options<BuildStreamOptions>
+
+describe('BuildPipeline', () => {
+  let options: Options<BuildPipelineOptions>
   let fetchMockSandbox: fetchMock.FetchMockSandbox
   beforeEach(() => {
     fetchMock.reset()
@@ -43,7 +43,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage'])
 
-    const uut = BuildStream(source, options)
+    const uut = BuildPipeline(source, options)
 
     // act
     const result: Result[] = await collect(uut)
@@ -66,7 +66,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage'])
 
-    const uut = BuildStream(source, options)
+    const uut = BuildPipeline(source, options)
 
     // act
     const result: Result[] = await collect(uut)
@@ -99,7 +99,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage/'])
 
-    const uut = BuildStream(source, {
+    const uut = BuildPipeline(source, {
       ...options,
       recursive: true,
     })
@@ -140,7 +140,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage/'])
 
-    const uut = BuildStream(source, {
+    const uut = BuildPipeline(source, {
       ...options,
       recursive: false,
     })
@@ -165,7 +165,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage/'])
 
-    const uut = BuildStream(source, {
+    const uut = BuildPipeline(source, {
       ...options,
       recursive: false,
     })
@@ -192,7 +192,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage'])
 
-    const uut = BuildStream(source, options)
+    const uut = BuildPipeline(source, options)
 
     // act
     const urls: any[] = []
@@ -222,7 +222,7 @@ Allow: *`)
 
     const source = toReadable(['http://test.com/testpage'])
 
-    const uut = BuildStream(source, options)
+    const uut = BuildPipeline(source, options)
 
     // act
     const urls: any[] = []
