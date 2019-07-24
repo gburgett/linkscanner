@@ -35,7 +35,7 @@ const defaultFormatter = (args: Args) => {
 interface LinkscannerOptions {
   hostnames?: string | string[]
   followRedirects: boolean
-  recursive: boolean
+  recursive: boolean | number
   excludeExternal: boolean
   include: string[]
 

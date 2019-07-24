@@ -31,9 +31,21 @@ const argv = yargs
     alias: 'p',
   })
   .option('recursive', {
-    boolean: true,
     description: 'Recursively crawl all links on the same host',
     alias: 'r',
+    coerce: (arg: any): boolean | number => {
+      if (typeof arg == 'boolean') {
+        return arg
+      }
+      if (typeof arg == 'number') {
+        return arg
+      }
+      const num = parseInt(arg as string, 10)
+      if (isNaN(num)) {
+        throw new Error(`--recursive must be an integer`)
+      }
+      return num
+    },
   })
   .option('exclude-external', {
     boolean: true,

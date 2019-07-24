@@ -8,7 +8,6 @@ import { BuildPipeline, BuildPipelineOptions } from './build_pipeline'
 import { Result, SuccessResult } from './model'
 import { Options } from './util'
 
-
 describe('BuildPipeline', () => {
   let options: Options<BuildPipelineOptions>
   let fetchMockSandbox: fetchMock.FetchMockSandbox
@@ -151,6 +150,31 @@ Allow: *`)
     expect(result.length).to.equal(2)
     expect(result[0].url.toString()).to.eq('http://test.com/testpage/')
     expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
+  })
+
+  it('does not simple recurse when recursive: 0', async () => {
+    fetchMockSandbox.get('http://test.com/testpage',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body><a href="http://other.com">Other Page</a></body></html>`,
+      })
+
+    const source = toReadable(['http://test.com/testpage'])
+
+    const uut = BuildPipeline(source, {
+      ...options,
+      recursive: 0,
+    })
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(1)
+    expect((result[0] as SuccessResult).status).to.eq(200)
+    expect(result[0].url.toString()).to.eq('http://test.com/testpage')
   })
 
   it('skips disallowed URLs', async () => {

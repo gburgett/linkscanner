@@ -14,7 +14,7 @@ import { assign, Options } from './util'
 export interface BuildPipelineOptions {
   hostnames: Set<string>
   followRedirects: boolean
-  recursive: boolean
+  recursive: boolean | number
   'exclude-external': boolean
 
   logger: Logger
@@ -151,8 +151,12 @@ export function BuildPipeline(
         return
       }
 
-      if (!options.recursive && !sourceUrls.has(parent.url.toString())) {
-        // Do not scan URLs that didn't come straight from one of our source URLs.
+      const recursionLimit: number =
+        options.recursive === false ? 1 :
+          options.recursive === true ? Infinity :
+            options.recursive
+      if (recursionLimit != Infinity && countParents(parent) > recursionLimit) {
+        // Do not recurse any deeper than the recursion limit
         logger.debug('recursive', url.toString(), parent.url.toString())
         return
       }
@@ -186,4 +190,13 @@ export function BuildPipeline(
       logger.error(ex)
     }
   }
+}
+
+function countParents(result: Result | undefined): number {
+  let i = 0
+  while (result) {
+    i++
+    result = result.parent
+  }
+  return i
 }
