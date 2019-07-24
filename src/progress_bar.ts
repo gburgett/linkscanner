@@ -1,8 +1,6 @@
-import { throttle } from 'async-toolbox'
-import { EventEmitter } from 'events'
 import { Writable } from 'stream'
 
-import chalk from 'chalk'
+import chalk, { Chalk } from 'chalk'
 import { defaultLogger, Logger } from './logger'
 import { Result } from './model'
 import { assign, isomorphicPerformance, Options } from './util'
@@ -11,6 +9,8 @@ export interface ProgressBarOptions {
   logger: Logger
   /** Width of one line of output terminal.  Undefined to use process.stdout.columns */
   width?: number
+
+  color: boolean | number,
 }
 
 interface ProgressBarState {
@@ -24,6 +24,7 @@ interface ProgressBarState {
 export class ProgressBar extends Writable implements Logger {
 
   private readonly _options: ProgressBarOptions
+  private readonly _chalk: Chalk
 
   private readonly state: ProgressBarState = {
     checked: new Set<string>(),
@@ -38,7 +39,13 @@ export class ProgressBar extends Writable implements Logger {
     })
     this._options = assign({
       logger: defaultLogger,
+      color: (typeof process != 'undefined' && require('supports-color').stderr.level) || false,
     }, options)
+
+    this._chalk = new chalk.constructor({
+      enabled: !!this._options.color,
+      level: typeof(this._options.color) == 'boolean' ? 1 : this._options.color,
+    })
 
     this.on('pipe', (resultsStream) => {
       resultsStream.on('url', this._onUrl)
@@ -61,11 +68,14 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   public render = async () => {
-    const {checked, all, latest, isRendered} = this.state
+    const {checked, all, latest} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
     const pct = Math.min(1.0, checked.size / all.size)
     const elapsed = this.state.start && isomorphicPerformance.now() - this.state.start
+
+    // tslint:disable-next-line: no-shadowed-variable
+    const chalk = this._chalk
 
     if (!elapsed) {
       // nothing to do
