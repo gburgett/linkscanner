@@ -13,6 +13,7 @@ describe('ConsoleFormatter', () => {
     const messages: string[] = []
     const instance = new ConsoleFormatter({
       logger: {
+        ...console,
         log: (msg: string) => messages.push(msg),
       } as any,
     })
@@ -53,6 +54,7 @@ describe('ConsoleFormatter', () => {
     const messages: string[] = []
     const instance = new ConsoleFormatter({
       logger: {
+        ...console,
         log: (msg: string) => messages.push(msg),
       } as any,
     })
@@ -96,6 +98,7 @@ describe('ConsoleFormatter', () => {
     const messages: string[] = []
     const instance = new ConsoleFormatter({
       logger: {
+        ...console,
         log: (msg: string) => messages.push(msg),
       } as any,
     })
