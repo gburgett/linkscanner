@@ -2,7 +2,15 @@ import chalk from 'chalk'
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { ErrorResult, isErrorResult, isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
+import {
+  ErrorResult,
+  isErrorResult,
+  isSkippedResult,
+  isSuccessResult,
+  Result,
+  SkippedResult,
+  SuccessResult,
+} from '../model'
 import { assign, Options, present } from '../util'
 
 export interface ConsoleFormatterOptions {
@@ -125,13 +133,13 @@ export class ConsoleFormatter extends Writable {
     const excludedResults = childResults.filter(isSkippedResult)
 
     // Unknown results - there was a recorded link but no result object written.
-    // Add them to the broken results.
+    // Add them to the skipped results.
     const unknownResults = result.links.filter((r) =>
       !childResults.find((excluded) =>
         excluded.url.toString() == r.toString()))
 
-    brokenResults.push(...unknownResults.map<ErrorResult>((r) => ({
-      type: 'error',
+    excludedResults.push(...unknownResults.map<SkippedResult>((r) => ({
+      type: 'skip',
       url: r,
       method: undefined,
       status: undefined,
@@ -139,7 +147,6 @@ export class ConsoleFormatter extends Writable {
       leaf: true,
       parent: result,
       reason: 'unknown',
-      error: new Error(`Unable to find matching result for ${r}`),
     })))
 
     /*
@@ -155,7 +162,9 @@ export class ConsoleFormatter extends Writable {
       result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
       linkCount > 0 &&
         chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedResults.length.toFixed(0)} not checked. `) +
-          (brokenResults.length == 0 ? chalk.green(`0 broken.`) : chalk.red(`${brokenResults.length} broken.`)),
+          (brokenResults.length == 0 ?
+            (successResults.length > 0 ? chalk.green(`0 broken.`) : '') :
+              chalk.red(`${brokenResults.length} broken.`)),
     ]
 
     /**

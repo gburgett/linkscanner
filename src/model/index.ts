@@ -43,7 +43,7 @@ export interface SkippedResult extends ResultCommon {
   leaf: true
 }
 
-const skipReasons = ['disallowed', 'external'] as const
+const skipReasons = ['disallowed', 'external', 'unknown'] as const
 export type SkipReason = typeof skipReasons[number]
 
 export function isSkippedResult(result: Result): result is SkippedResult {

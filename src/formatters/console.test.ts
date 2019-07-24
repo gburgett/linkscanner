@@ -47,7 +47,7 @@ describe('ConsoleFormatter', () => {
     expect(messages[0]).to.include('http://www.test.com')
     expect(messages[0]).to.include('1 links found')
     expect(messages[0]).to.include('1 not checked')
-    expect(messages[0]).to.include('0 broken')
+    expect(messages[0]).to.not.include('0 broken')
   })
 
   it('does not log leaf nodes', async () => {
