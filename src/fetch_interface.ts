@@ -42,28 +42,9 @@ export class FetchInterfaceWrapper implements FetchInterface {
           interval: maxConcurrency.interval,
         })
 
-    if (typeof window == 'undefined') {
-      // NodeJS way to wrap the request constructor.  Fixes:
-      //  TypeError: fetchInterface.Request is not a constructor
       // tslint:disable-next-line: max-classes-per-file
-      this.Request = class extends fetch.Request {
-        constructor(url: string, requestInit?: RequestInit) {
-          // add in the headers inside the request constructor call
-          requestInit = {
-            ...requestInit,
-            headers: {
-              ...(requestInit && requestInit.headers),
-              ...headers,
-            },
-          }
-          super(url, requestInit)
-        }
-      }
-    } else {
-      // Alternate browser way to wrap request constructor.  Fixes:
-      //  TypeError: Failed to construct 'Request': Please use the 'new' operator,
-      //  this DOM object constructor cannot be called as a function.
-      this.Request = ((url: string, requestInit?: RequestInit) => {
+    this.Request = class {
+      constructor(url: string, requestInit?: RequestInit) {
         // add in the headers inside the request constructor call
         requestInit = {
           ...requestInit,
@@ -72,9 +53,10 @@ export class FetchInterfaceWrapper implements FetchInterface {
             ...headers,
           },
         }
-        return new fetch.Request(url, requestInit)
-      }) as any
-    }
+        // We actually want a real fetch.Request but with our injected params
+        return new fetch.Request(url, requestInit) as any
+      }
+    } as any
 
     this.fetch = this.semaphore.synchronize((req: Request) => {
       // timeout inside the synchronize so as to avoid problems with maxConcurrency
