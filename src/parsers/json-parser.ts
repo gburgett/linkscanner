@@ -28,8 +28,6 @@ export class JsonParser {
       if (typeof value == 'string') {
         if (value.match(JsonParser.regexp)) {
           this._tryEmit(value, baseUrl, push)
-        } else {
-          console.log(`no match '${value}'`, JsonParser.regexp)
         }
       }
     }

@@ -2,6 +2,7 @@ import { Logger } from '../logger'
 import {URL} from '../url'
 import { Options } from '../util'
 import { CheerioParser } from './cheerio-parser'
+import { JsonParser } from './json-parser'
 import { RegexpParser } from './regexp-parser'
 
 export interface Parser {
@@ -37,10 +38,12 @@ export const defaultParsers = (options?: Options<ParserOptions>) => ({
     'default': new RegexpParser(options),
     'text/html': new CheerioParser(options),
     'text': new RegexpParser(options),
+    'application/json': new JsonParser(options),
     'video': NullParser,
     'audio': NullParser,
     'image': NullParser,
     'application/pdf': NullParser,
+    'json': new JsonParser(options),
   })
 
 export function findParser(parsers: Parsers, mimeType: string | null): Parser {
@@ -48,6 +51,17 @@ export function findParser(parsers: Parsers, mimeType: string | null): Parser {
   if (parsers[mimeType]) {
     return parsers[mimeType]
   }
+
+  if (mimeType.includes('+')) {
+    // application/vnd.foobar+json
+    const extParts = mimeType.split('+')
+    const suffix = extParts.pop()!
+    if (parsers[suffix]) {
+      return parsers[suffix]
+    }
+    mimeType = extParts.join('+')
+  }
+
   const parts = mimeType.split('/')
   while (parts.length > 0) {
     parts.pop()
