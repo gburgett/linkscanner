@@ -16,7 +16,8 @@ module.exports = function(config) {
     files: [
       "node_modules/cross-fetch/dist/cross-fetch.js",
       "node_modules/fetch-mock/dist/es5/client-bundle.js",
-      "src/**/*.test.ts"
+      "src/**/*.test.ts",
+      "src/**/*.test.browser.ts"
     ],
     exclude: [],
     webpack: webpackConfig,

@@ -25,6 +25,8 @@
     "src/**/*.ts"
   ],
   "exclude": [
-    "src/**/*.test.ts"
+    "src/**/*.test.ts",
+    "src/**/*.test.node.ts",
+    "src/**/*.test.browser.ts"
   ]
 }

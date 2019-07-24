@@ -12,8 +12,8 @@
   ],
   "scripts": {
     "lint": "tslint 'src/**/*.ts'",
-    "test-cover": "tsc --project tsconfig.test.json && nyc mocha 'src/**/*.test.js'",
-    "test-node": "mocha --require ts-node/register src/*.test.ts src/**/*.test.ts",
+    "test-cover": "tsc --project tsconfig.test.json && nyc mocha 'src/**/*.test.js' 'src/**/*.test.node.js'",
+    "test-node": "mocha --require ts-node/register src/*.test.ts src/**/*.test.ts src/**/*.test.node.ts",
     "test-browser": "npm run clean && karma start",
     "test-watch": "nodemon --watch src/ -e ts --exec 'npm run test-node || echo \"failed\"'",
     "test": "npm run test-node && npm run test-browser",
