@@ -152,6 +152,75 @@ Allow: *`)
     expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
   })
 
+  it('Heads same-host URLs on recursive page when recursive: 2', async () => {
+    fetchMockSandbox.get('http://test.com/testpage/',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body><a href="./relative/link">Relative Page</a></body></html>`,
+      })
+    fetchMockSandbox.getOnce('http://test.com/testpage/relative/link',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body><a href="http://test.com/testpage2">Other Page</a></body></html>`,
+      })
+    fetchMockSandbox.headOnce('http://test.com/testpage2', 200)
+
+    const source = toReadable(['http://test.com/testpage/'])
+
+    const uut = BuildPipeline(source, {
+      ...options,
+      recursive: 2,
+    })
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(3)
+    expect((result[1] as SuccessResult).status).to.eq(200)
+    expect(result[1].host).to.eq('test.com')
+    expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
+    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage/')
+
+    expect((result[2] as SuccessResult).status).to.eq(200)
+    expect(result[2].host).to.eq('test.com')
+    expect(result[2].url.toString()).to.eq('http://test.com/testpage2')
+    expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage/relative/link')
+  })
+
+  it('Heads same-host URLs found on page when recursive: 1', async () => {
+    fetchMockSandbox.get('http://test.com/testpage',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body><a href="http://test.com/testpage2">Other Page</a></body></html>`,
+      })
+    fetchMockSandbox.headOnce('http://test.com/testpage2', 200)
+
+    const source = toReadable(['http://test.com/testpage'])
+
+    const uut = BuildPipeline(source, {
+      ...options,
+      recursive: 1,
+    })
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(2)
+    expect((result[1] as SuccessResult).status).to.eq(200)
+    expect(result[1].host).to.eq('test.com')
+    expect(result[1].url.toString()).to.eq('http://test.com/testpage2')
+    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
+  })
+
   it('does not simple recurse when recursive: 0', async () => {
     fetchMockSandbox.get('http://test.com/testpage',
       {

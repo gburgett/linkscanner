@@ -151,8 +151,7 @@ export function BuildPipeline(
       const isLeafNode: boolean =
         // external URLs are always leafs
         !hostnameSet.hostnames.has(url.hostname) ||
-        // If not recursive, any URL found on a page is a leaf node
-        !options.recursive
+        recursionLimit != Infinity && countParents(parent) >= recursionLimit
       if (isLeafNode) {
         logger.debug('leaf', url.toString())
       }
