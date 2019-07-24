@@ -49,6 +49,7 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   public _write = (chunk: Result, encoding: string, cb: () => void) => {
+    this.state.all.add(chunk.url.toString())
     this.state.checked.add(chunk.url.toString())
     this.render()
     cb()
@@ -63,7 +64,7 @@ export class ProgressBar extends Writable implements Logger {
     const {checked, all, latest, isRendered} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
-    const pct = checked.size / all.size
+    const pct = Math.min(1.0, checked.size / all.size)
     const elapsed = this.state.start && isomorphicPerformance.now() - this.state.start
 
     if (!elapsed) {
@@ -78,7 +79,7 @@ export class ProgressBar extends Writable implements Logger {
       ` (${Math.floor(pct * 100).toString().padStart(3)}%)`,
     ]
 
-    const barTotalWidth = width - (msgParts.reduce((sum, part) => sum + part.length, 0)) - 1
+    const barTotalWidth = width - (msgParts.reduce((sum, part) => sum + part.length, 0)) - 2
     const barSize = Math.floor(pct * barTotalWidth)
     msgParts.splice(1, 0,
       `${'\u2588'.repeat(barSize)}${' '.repeat(barTotalWidth - barSize)}|`,
@@ -95,7 +96,7 @@ export class ProgressBar extends Writable implements Logger {
     // clear the current line before writing the msg
     logger.error('\x1b[2K' + msg)
     // write the latest hit line
-    logger.error('\x1b[2K' + chalk.dim.cyan(latest || '') +
+    logger.error('\x1b[2K' + chalk.dim.cyan((latest || '').substr(0, width)) +
       // go up three lines after
       '\x1b[F\x1b[F\x1b[F')
 
