@@ -130,6 +130,10 @@ export class Fetcher extends ParallelTransform {
     })
 
     if (followRedirects && [301, 302, 307].includes(response.status)) {
+      // push the redirect
+      fullResult.leaf = false
+      this.push(fullResult)
+
       // single redirect
       const location = response.headers.get('Location')
       if (location) {
@@ -148,7 +152,12 @@ export class Fetcher extends ParallelTransform {
           return
         }
 
-        await this._fetch({ ...chunk, url: parsedLocation })
+        // Try again, using the redirect result as the parent
+        await this._fetch({
+          ...chunk,
+          url: parsedLocation,
+          parent: fullResult,
+        })
       } else {
         const error: ErrorResult = {
           ...fullResult,

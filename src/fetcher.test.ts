@@ -29,6 +29,7 @@ describe('Fetcher', () => {
     new Fetcher({
       ...options,
       ...additionalOptions,
+      logger: console,
     })
 
   it('gets a result from a page', async () => {
@@ -107,6 +108,37 @@ describe('Fetcher', () => {
     await collect(uut)
 
     expect(emitted.length).to.eq(0)
+  })
+
+  it('follows redirects', async () => {
+    const uut = instance({
+      followRedirects: true,
+    })
+
+    fetchMockSandbox.headOnce('http://other.com', {
+      status:  307,
+      headers: {
+        Location: 'http://www.other.com',
+      },
+    })
+
+    fetchMockSandbox.headOnce('http://www.other.com/', 200)
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    expect((result[0] as ErrorResult).error).to.be.undefined
+    expect((result[0] as SuccessResult).status).to.eq(307)
+    expect(result[0].host).to.eq('other.com')
+    expect(result[0].url.toString()).to.eq('http://other.com/')
+    expect(result[0].leaf).to.be.false
+
+    expect((result[1] as SuccessResult).status).to.eq(200)
+    expect(result[1].host).to.eq('www.other.com')
+    expect(result[1].url.toString()).to.eq('http://www.other.com/')
+    expect(result[1].parent).to.eq(result[0])
   })
 
   it('pushes an error result when fetch throws', async () => {

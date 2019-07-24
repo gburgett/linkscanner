@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { ErrorResult, isErrorResult, isSkippedResult, isSuccessResult, Result, SkippedResult, SuccessResult } from '../model'
+import { ErrorResult, isErrorResult, isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
 import { assign, Options, present } from '../util'
 
 export interface ConsoleFormatterOptions {
@@ -92,6 +92,7 @@ export class ConsoleFormatter extends Writable {
   private _flush(result: Result, childResults: Result[]) {
     const { logger, verbose } = this.options
 
+    logger.debug('flush', result.url.toString())
     this.flushed.add(result.url.toString())
     if (result.leaf) {
       // don't print out any leaf node results.
@@ -112,7 +113,9 @@ export class ConsoleFormatter extends Writable {
 
     // Redirect results printed in yellow
     const redirectResults = successResults
-      .filter((r) => r.status >= 300 && r.status < 400)
+      .filter((r) => r.status >= 300 && r.status < 400 &&
+        // Only print redirect results that weren't retried.
+        r.leaf)
 
     // OK results in green or hidden
     const okResults = successResults

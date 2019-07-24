@@ -180,7 +180,6 @@ export function BuildPipeline(
         results.write(result)
         return
       }
-      logger.debug('allowed', url.toString(), robots.isAllowed(url.toString()), robots.isDisallowed(url.toString()))
 
       reentry.write({ url, parent, leaf: isLeafNode })
     } catch (ex) {
