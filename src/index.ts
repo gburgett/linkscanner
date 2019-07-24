@@ -53,7 +53,7 @@ const linkscannerDefaults: Readonly<LinkscannerOptions> = {
   followRedirects: false,
   recursive: false,
   excludeExternal: false,
-  maxConcurrency: 5,
+  maxConcurrency: 2,
   timeout: 10000,
 
   headers: [],

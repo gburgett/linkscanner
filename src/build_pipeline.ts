@@ -1,14 +1,14 @@
 import { ParallelTransform, Readable } from 'async-toolbox/stream'
-import * as crossFetch from 'cross-fetch'
+import { Interval } from 'limiter'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { EventForwarder } from './event_forwarder'
 import { FetchInterface } from './fetch_interface'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
-import { ErrorResult, Result, SkippedResult, SuccessResult } from './model'
+import { Result, SkippedResult, SuccessResult } from './model'
 import { handleEOF, Reentry } from './reentry'
-import { parseUrl, parseUrls, URL } from './url'
+import { parseUrls, URL } from './url'
 import { assign, Options } from './util'
 
 export interface BuildPipelineOptions {
@@ -16,6 +16,7 @@ export interface BuildPipelineOptions {
   followRedirects: boolean
   recursive: boolean | number
   'exclude-external': boolean
+  maxConcurrency: number | { tokens: number, interval: Interval }
 
   logger: Logger
   fetch?: FetchInterface

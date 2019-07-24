@@ -3,6 +3,7 @@ import * as crossFetch from 'cross-fetch'
 import robotsParser, { Robots } from 'robots-parser'
 import { Duplex } from 'stream'
 
+import { Interval } from 'limiter';
 import { FetchInterface } from './fetch_interface'
 import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
@@ -14,6 +15,7 @@ interface HostnameSetOptions {
   userAgent?: string
   logger: Logger
   fetch: FetchInterface
+  maxConcurrency: number | { tokens: number, interval: Interval }
 }
 
 export interface Host { hostname: string, protocol: string, port?: string }
@@ -30,6 +32,7 @@ export class HostnameSet {
       followRedirects: false,
       logger: defaultLogger,
       fetch: crossFetch,
+      maxConcurrency: 1,
     },
       options)
   }
@@ -42,13 +45,21 @@ export class HostnameSet {
 
     const robots = await this.robotsFor(host)
     const crawlDelay = robots.getCrawlDelay(this._options.userAgent || '*')
+    const { maxConcurrency } = this._options
 
     const semaphore = crawlDelay ?
       new Limiter({
         interval: crawlDelay * 1000,
         tokensPerInterval: 1,
       }) :
-      new Semaphore({ tokens: 1 })
+        typeof(maxConcurrency) == 'number' ?
+          new Semaphore({
+            tokens: maxConcurrency,
+          }) :
+          new Limiter({
+            tokensPerInterval: maxConcurrency.tokens,
+            interval: maxConcurrency.interval,
+          })
 
     this._locks.set(hostKey(host), semaphore)
     return semaphore
@@ -108,10 +119,6 @@ export class HostnameSet {
     this._robots.set(robotsFile.toString(), robots)
     return robots
   }
-}
-
-function exists<T>(value: T | undefined | null): value is T {
-  return !!value
 }
 
 function hostKey({hostname, protocol, port}: Host): string {
