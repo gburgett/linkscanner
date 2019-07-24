@@ -6,7 +6,7 @@ import { EventForwarder } from './event_forwarder'
 import { FetchInterface } from './fetch_interface'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
-import { Result, SkippedResult, SuccessResult } from './model'
+import { ErrorResult, Result, SkippedResult, SuccessResult } from './model'
 import { handleEOF, Reentry } from './reentry'
 import { parseUrl, parseUrls, URL } from './url'
 import { assign, Options } from './util'
@@ -49,29 +49,15 @@ export function BuildPipeline(
     },
   )
 
-  const sourceUrls = new Set<string>()
   const sourceUrlTracker = new ParallelTransform({
     objectMode: true,
     highWaterMark: 0,
     async transformAsync(url: URL) {
-      // always correct the user's typed-in URL if it is redirected.
-      const {fetch, Request} = options.fetch || crossFetch
-      const resp = await fetch(new Request(url.toString(), {
-        redirect: 'follow',
-      }))
-
-      if (resp.url) {
-        // we probably got redirected and the response URL is different from
-        // the source URL
-        url = parseUrl(resp.url)
-      }
-
       if (!args || !args.hostnames || args.hostnames.size == 0) {
         // since hostnames not explicitly provided, any sourceUrl in the readable
         // is considered a source hostname for which we'll do a GET
         hostnameSet.hostnames.add(url.hostname)
       }
-      sourceUrls.add(url.toString())
       logger.debug('source URL', url.toString())
       this.push(url)
     },
@@ -126,7 +112,7 @@ export function BuildPipeline(
   //   results,
   // })
 
-  sourceUrlTracker.on('data', (url) => {
+  source.on('data', (url) => {
     // forward source URLs as URL events too, with no parent
     results.emit('url', { url })
   })
