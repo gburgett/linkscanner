@@ -25,8 +25,12 @@ export class TableFormatter extends Writable {
   }
 
   public _write(result: Result, encoding: any, cb: (error?: Error | null) => void) {
-    const { logger, verbose } = this.options
+    this._format(result)
+    cb()
+  }
 
+  private _format(result: Result) {
+    const { logger, verbose } = this.options
     if (isSkippedResult(result)) {
       return
     }
@@ -66,7 +70,5 @@ export class TableFormatter extends Writable {
     } else {
       logger.log(line.join('\t'))
     }
-
-    cb()
   }
 }
