@@ -7,8 +7,8 @@ import { PassThrough, Transform, TransformCallback } from 'stream'
 import { BuildPipeline as BuildPipeline } from './build_pipeline'
 import { EventForwarder } from './event_forwarder'
 import { FetchInterface, FetchInterfaceWrapper } from './fetch_interface'
-import { ConsoleFormatter } from './formatters/console'
-import { TableFormatter } from './formatters/table'
+import { ConsoleFormatter, ConsoleFormatterOptions } from './formatters/console'
+import { TableFormatter, TableFormatterOptions } from './formatters/table'
 import { debugLogger, defaultLogger, Logger } from './logger'
 import { Result } from './model'
 import { ProgressBar } from './progress_bar'
@@ -16,11 +16,11 @@ import { loadSource } from './source'
 import { assign, Options } from './util'
 
 const formatters = {
-  table: (args: Args) => new TableFormatter(args),
-  console: (args: Args) => new ConsoleFormatter(args),
+  table: (args: TableFormatterOptions) => new TableFormatter(args),
+  console: (args: ConsoleFormatterOptions) => new ConsoleFormatter(args),
 }
 
-const defaultFormatter = (args: Args) => {
+const defaultFormatter = (args: TableFormatterOptions & ConsoleFormatterOptions) => {
   if (typeof process == 'undefined' || process.stdout.isTTY) {
     // we're in a nodejs process with output attached to a TTY terminal, OR
     // we're in a browser process.
@@ -104,45 +104,25 @@ class Linkscanner extends Transform {
       }),
       args)
 
-    let progress: ProgressBar | undefined
-    if (options.progress) {
-      // Attach a progress bar
-      progress = new ProgressBar({
-        logger: options.logger,
-      })
-      options.logger = progress
-    }
-
-    if (!options.debug) {
-      const subLogger = options.logger
-      options.logger = {
-        error: subLogger.error.bind(subLogger),
-        log: subLogger.log.bind(subLogger),
-        debug: () => {return},
-      }
-    }
-
-    const formatterName = options.formatter
-    const formatter: Writable<Result> = (
-      typeof(formatterName) == 'object' ?
-        formatterName
-        : formatterName && formatters[formatterName] && formatters[formatterName](options)
-    ) || defaultFormatter(options)
-
     const sourceStream = loadSource({ source })
 
-    const linkscanner = new Linkscanner(options)
+    let builder = Linkscanner.build(options)
+      .addFormatter(options.formatter)
 
-    // pipe all the streams together
-    const results = sourceStream
-      .pipe(linkscanner)
-      .pipe(formatter)
-
-    if (progress) {
-      linkscanner.pipe(progress)
+    if (options.progress) {
+      // Attach a progress bar
+      builder = builder.progress()
     }
 
-    await onceAsync(results, 'finish')
+    // pipe all the streams together
+    const resultsStream = sourceStream
+      .pipe(builder.get())
+
+    await onceAsync(resultsStream, 'end')
+  }
+
+  public static build(opts: Options<LinkscannerOptions>): Builder {
+    return Builder.new(opts)
   }
 
   private readonly _options: LinkscannerOptions
@@ -225,4 +205,91 @@ function parseHeaders(headers: string[]): { [key: string]: string } {
     result[key] = value.join(':').trimLeft()
   }
   return result
+}
+
+// tslint:disable-next-line: max-classes-per-file
+class Builder {
+
+  public static new(options: Options<LinkscannerOptions>): Builder {
+    const _options = assign({},
+      linkscannerDefaults,
+      options)
+
+    return new Builder(_options)
+  }
+
+  public readonly _formatters: Array<(args: LinkscannerOptions) => Writable<Result>>
+  public readonly _progress?: ProgressBar
+
+  private constructor(
+    public readonly _options: Readonly<LinkscannerOptions>,
+    previousBuilder?: {
+      _formatters: Builder['_formatters'],
+      _progress?: Builder['_progress'],
+    },
+  ) {
+      this._formatters = previousBuilder ? previousBuilder._formatters : []
+      this._progress = previousBuilder && previousBuilder._progress
+  }
+
+  /**
+   * Adds a formatter to the linkscanner.  Provide a custom formatter, select a
+   * formatter by name, or omit the parameter to use the default formatter.
+   * @param formatter The formatter to use which will write to the logger.
+   */
+  public addFormatter(formatter?: keyof typeof formatters | Writable<Result>): Builder {
+    let f: ((args: LinkscannerOptions) => Writable<Result>) | undefined = (
+      typeof(formatter) == 'object' ?
+        () => formatter
+          : formatter && formatters[formatter] && formatters[formatter]
+    )
+    if (!f) {
+      f = defaultFormatter
+    }
+
+    return new Builder(this._options,
+      {
+        ...this,
+        _formatters: [...this._formatters, f],
+      })
+  }
+
+  /**
+   * Adds a progress bar to the linkscanner.  Note that the progress bar will
+   * replace the logger and intercept it, in order to clear and rewrite itself
+   * whenever logging takes place.
+   */
+  public progress(): Builder {
+    if (this._progress) {
+      return this
+    }
+
+    const _progress = new ProgressBar({
+      logger: this._options.logger,
+    })
+
+    return new Builder({
+      ...this._options,
+        // the progress bar intercepts logging so as to clear & rewrite after each log line
+      logger: _progress,
+    }, {
+      ...this,
+      _progress,
+    })
+  }
+
+  /**
+   * Constructs a linkscanner from the configured options.
+   */
+  public get(): Linkscanner {
+    const linkscanner = new Linkscanner(this._options)
+    this._formatters.forEach((f) => {
+      return linkscanner.pipe(f(this._options))
+    })
+    if (this._progress) {
+      linkscanner.pipe(this._progress)
+    }
+
+    return linkscanner
+  }
 }
