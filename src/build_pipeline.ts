@@ -14,7 +14,7 @@ import { assign, Options } from './util'
 export interface BuildPipelineOptions {
   hostnames: Set<string>
   followRedirects: boolean
-  useCrawlDelay: boolean
+  ignoreRobotsFile: boolean
   recursive: boolean | number
   'exclude-external': boolean
   maxConcurrency: number | { tokens: number, interval: Interval }

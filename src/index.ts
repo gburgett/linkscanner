@@ -35,7 +35,7 @@ const defaultFormatter = (args: TableFormatterOptions & ConsoleFormatterOptions)
 interface LinkscannerOptions {
   hostnames?: string | string[]
   followRedirects: boolean
-  useCrawlDelay: boolean
+  ignoreRobotsFile: boolean
   recursive: boolean | number
   excludeExternal: boolean
   include: string[]
@@ -52,7 +52,7 @@ interface LinkscannerOptions {
 
 const linkscannerDefaults: Readonly<LinkscannerOptions> = {
   followRedirects: false,
-  useCrawlDelay: false,
+  ignoreRobotsFile: false,
   recursive: false,
   excludeExternal: false,
   maxConcurrency: 2,

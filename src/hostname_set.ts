@@ -12,7 +12,7 @@ import { assign, Options } from './util'
 
 interface HostnameSetOptions {
   followRedirects: boolean,
-  useCrawlDelay?: boolean
+  ignoreRobotsFile: boolean
   userAgent?: string
   logger: Logger
   fetch: FetchInterface
@@ -31,6 +31,7 @@ export class HostnameSet {
               options?: Options<HostnameSetOptions>) {
     this._options = assign({
       followRedirects: false,
+      ignoreRobotsFile: false,
       logger: defaultLogger,
       fetch: crossFetch,
       maxConcurrency: 1,
@@ -45,7 +46,10 @@ export class HostnameSet {
     }
 
     let semaphore: Semaphore | undefined
-    if (this._options.useCrawlDelay) {
+    if (!this._options.ignoreRobotsFile &&
+      !this.hostnames.has(host.hostname)) {
+      // For external hosts, check the crawl delay.  For the host we've specified to
+      //  check, using the crawl delay would be prohibitive.
       const robots = await this.robotsFor(host)
       const crawlDelay = robots.getCrawlDelay(this._options.userAgent || '*')
       if (crawlDelay) {
@@ -82,6 +86,10 @@ export class HostnameSet {
     const robotsFile = parseUrl(`${protocol}//${hostname}/robots.txt`)
     if (port) {
       robotsFile.port = port.toString()
+    }
+
+    if (this._options.ignoreRobotsFile) {
+      return robotsParser(robotsFile.toString(), '')
     }
 
     return await this.fetchRobotsFile(robotsFile)

@@ -2,6 +2,7 @@ import yargs from 'yargs'
 
 import Linkscanner from '.'
 
+const source: string[] = []
 const argv = yargs
   .command('$0', 'Scans a web page for broken links')
   .example('$0 http://google.com', 'parses a[href] elements from google.com and checks all linked URLs')
@@ -30,6 +31,10 @@ const argv = yargs
     description: 'display a progress bar',
     alias: 'p',
   })
+  .option('--ignore-robots-file', {
+    boolean: true,
+    description: 'Causes linkscanner to not respect robots file rules like disallow or crawl delay',
+  })
   .option('recursive', {
     description: 'Recursively crawl all links on the same host',
     alias: 'r',
@@ -42,7 +47,10 @@ const argv = yargs
       }
       const num = parseInt(arg as string, 10)
       if (isNaN(num)) {
-        throw new Error(`--recursive must be an integer`)
+        // it's most likely a non-option argument, ex.
+        // linkscanner -r https://www.google.com
+        source.push(arg)
+        return true
       }
       return num
     },
@@ -78,7 +86,9 @@ const argv = yargs
     choices: ['a', 'link', 'img', 'script', 'form', 'iframe', 'all'],
   }).argv
 
-Linkscanner.run(argv._, {
+console.log('recursive', argv.recursive)
+
+Linkscanner.run([...source, ...argv._], {
     ...argv,
   })
   .then(
