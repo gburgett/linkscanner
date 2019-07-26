@@ -86,8 +86,6 @@ const argv = yargs
     choices: ['a', 'link', 'img', 'script', 'form', 'iframe', 'all'],
   }).argv
 
-console.log('recursive', argv.recursive)
-
 Linkscanner.run([...source, ...argv._], {
     ...argv,
   })
