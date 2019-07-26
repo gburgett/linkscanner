@@ -127,7 +127,7 @@ export class HostnameSet {
         redirect: 'follow',
       }))
     } catch (ex) {
-      this._options.logger.error(`Error fetching robots.txt: ${ex}`)
+      this._options.logger.error(`Error fetching ${robotsFile}: ${ex}`)
     }
 
     let robots: Robots
