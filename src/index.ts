@@ -104,8 +104,6 @@ class Linkscanner extends Transform {
       }),
       args)
 
-    const sourceStream = loadSource({ source })
-
     let builder = Linkscanner.build(options)
       .addFormatter(options.formatter)
 
@@ -114,11 +112,7 @@ class Linkscanner extends Transform {
       builder = builder.progress()
     }
 
-    // pipe all the streams together
-    const resultsStream = sourceStream
-      .pipe(builder.get())
-
-    await onceAsync(resultsStream, 'end')
+    return builder.get().run(source)
   }
 
   public static build(opts: Options<LinkscannerOptions>): Builder {
@@ -143,6 +137,17 @@ class Linkscanner extends Transform {
       options)
 
     this._results = this.initPipeline()
+  }
+
+  /**
+   * Runs the linkscanner over a set of source URLs, returning an array of results.
+   * This consumes the linkscanner.
+   */
+  public async run(source: string | string[]): Promise<void> {
+    loadSource({source})
+      .pipe(this)
+
+    await onceAsync(this, 'end')
   }
 
   public _transform(chunk: any, encoding: string, cb: TransformCallback): void {

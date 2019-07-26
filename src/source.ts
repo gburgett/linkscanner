@@ -2,7 +2,7 @@ import {toReadable} from 'async-toolbox/stream'
 import { EOL } from 'os'
 import { Transform } from 'stream'
 
-export function loadSource(args: { source: string | string [] }) {
+export function loadSource(args: { source: string | string[] }) {
   // specify '-' to read from stdin
   if (args.source == '-' || args.source == ['-'] ||
       // or if no URL is given on the command line
