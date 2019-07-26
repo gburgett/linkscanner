@@ -35,6 +35,7 @@ const defaultFormatter = (args: TableFormatterOptions & ConsoleFormatterOptions)
 interface LinkscannerOptions {
   hostnames?: string | string[]
   followRedirects: boolean
+  useCrawlDelay: boolean
   recursive: boolean | number
   excludeExternal: boolean
   include: string[]
@@ -51,6 +52,7 @@ interface LinkscannerOptions {
 
 const linkscannerDefaults: Readonly<LinkscannerOptions> = {
   followRedirects: false,
+  useCrawlDelay: false,
   recursive: false,
   excludeExternal: false,
   maxConcurrency: 2,
@@ -146,6 +148,10 @@ class Linkscanner extends Transform {
   public async run(source: string | string[]): Promise<void> {
     loadSource({source})
       .pipe(this)
+
+    // debugStreams({
+    //   linkscanner: this,
+    // }, this._options.logger)
 
     await onceAsync(this, 'end')
   }

@@ -3,7 +3,7 @@ import * as crossFetch from 'cross-fetch'
 import robotsParser, { Robots } from 'robots-parser'
 import { Duplex } from 'stream'
 
-import { Interval } from 'limiter';
+import { Interval } from 'limiter'
 import { FetchInterface } from './fetch_interface'
 import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
@@ -12,6 +12,7 @@ import { assign, Options } from './util'
 
 interface HostnameSetOptions {
   followRedirects: boolean,
+  useCrawlDelay?: boolean
   userAgent?: string
   logger: Logger
   fetch: FetchInterface
@@ -43,15 +44,25 @@ export class HostnameSet {
       return existing
     }
 
-    const robots = await this.robotsFor(host)
-    const crawlDelay = robots.getCrawlDelay(this._options.userAgent || '*')
-    const { maxConcurrency } = this._options
+    let semaphore: Semaphore | undefined
+    if (this._options.useCrawlDelay) {
+      const robots = await this.robotsFor(host)
+      const crawlDelay = robots.getCrawlDelay(this._options.userAgent || '*')
+      if (crawlDelay) {
+        if (crawlDelay >= 5) {
+          this._options.logger.error(`Warning: excessive crawl delay of ${crawlDelay}s for ${host.hostname}`)
+        }
 
-    const semaphore = crawlDelay ?
-      new Limiter({
-        interval: crawlDelay * 1000,
-        tokensPerInterval: 1,
-      }) :
+        semaphore = new Limiter({
+          interval: crawlDelay * 1000,
+          tokensPerInterval: 1,
+        })
+      }
+    }
+
+    if (!semaphore) {
+      const { maxConcurrency } = this._options
+      semaphore =
         typeof(maxConcurrency) == 'number' ?
           new Semaphore({
             tokens: maxConcurrency,
@@ -60,6 +71,7 @@ export class HostnameSet {
             tokensPerInterval: maxConcurrency.tokens,
             interval: maxConcurrency.interval,
           })
+    }
 
     this._locks.set(hostKey(host), semaphore)
     return semaphore
@@ -83,6 +95,7 @@ export class HostnameSet {
 
     const stream = new Fetcher({
       ...this._options,
+      robots: await this.robotsFor(host),
       semaphore: await this.lockFor(host),
     })
 

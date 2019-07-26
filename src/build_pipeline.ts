@@ -14,6 +14,7 @@ import { assign, Options } from './util'
 export interface BuildPipelineOptions {
   hostnames: Set<string>
   followRedirects: boolean
+  useCrawlDelay: boolean
   recursive: boolean | number
   'exclude-external': boolean
   maxConcurrency: number | { tokens: number, interval: Interval }
@@ -45,7 +46,6 @@ export function BuildPipeline(
     hostnames,
     {
       ...options,
-      followRedirects: options.followRedirects,
       logger,
     },
   )
@@ -111,7 +111,7 @@ export function BuildPipeline(
   //   reentry,
   //   fetcher,
   //   results,
-  // })
+  // }, logger)
 
   source.on('data', (url) => {
     // forward source URLs as URL events too, with no parent
@@ -121,7 +121,7 @@ export function BuildPipeline(
   // The CLI or consuming program needs the readable stream of results
   return results
 
-  async function onUrl({ url, parent }: { url: URL, parent: SuccessResult }) {
+  function onUrl({ url, parent }: { url: URL, parent: SuccessResult }) {
     try {
       if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
         // only scan URLs matching our known hostnames
@@ -154,21 +154,6 @@ export function BuildPipeline(
         recursionLimit != Infinity && countParents(parent) >= recursionLimit
       if (isLeafNode) {
         logger.debug('leaf', url.toString())
-      }
-
-      const robots = await hostnameSet.robotsFor(url)
-      if (robots.isAllowed(url.toString()) === false) {
-        const result: SkippedResult = {
-          type: 'skip',
-          url,
-          parent,
-          host: url.hostname,
-          leaf: true,
-          reason: 'disallowed',
-        }
-        logger.debug('disallowed', url.toString(), robots.isDisallowed(url.toString()))
-        results.write(result)
-        return
       }
 
       reentry.write({ url, parent, leaf: isLeafNode })

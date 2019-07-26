@@ -2,10 +2,11 @@ import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/strea
 require('es6-promise/auto')
 import { ReadLock } from 'async-toolbox'
 import 'cross-fetch/polyfill'
+import { Robots } from 'robots-parser'
 
 import { defaultFetchInterface, FetchInterface } from './fetch_interface'
 import { defaultLogger, Logger } from './logger'
-import { Chunk, ErrorResult, Result } from './model'
+import { Chunk, ErrorResult, Result, SkippedResult } from './model'
 import { defaultParsers, findParser, ParserOptions, Parsers } from './parsers'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
@@ -18,6 +19,7 @@ export interface FetchOptions extends ParallelTransformOptions {
   followRedirects: boolean
 
   parsers: Parsers
+  robots?: Robots
   logger: Logger
   fetch: FetchInterface
 }
@@ -61,6 +63,29 @@ export class Fetcher extends ParallelTransform {
     method = method || (leaf ? 'HEAD' : 'GET')
 
     const { fetch, Request } = this.options.fetch
+
+    const partialResult = {
+      parent,
+      leaf,
+      links: [] as URL[],
+      method,
+      url,
+      host: url.hostname,
+    }
+
+    const { robots } = this.options
+    if (robots && robots.isAllowed(url.toString()) === false) {
+      const result: SkippedResult = {
+        ...partialResult,
+        type: 'skip',
+        leaf: true,
+        reason: 'disallowed',
+      }
+      logger.debug('disallowed', url.toString(), robots.isDisallowed(url.toString()))
+      this.push(result)
+      return
+    }
+
     const request = new Request(url.toString(), {
       method,
       headers: {
@@ -68,15 +93,6 @@ export class Fetcher extends ParallelTransform {
       },
       redirect: 'manual',
     })
-
-    const partialResult = {
-      parent,
-      leaf,
-      links: [] as URL[],
-      method: request.method,
-      url,
-      host: url.hostname,
-    }
 
     logger.debug(`${request.method} ${request.url}`)
     const start = isomorphicPerformance.now()
