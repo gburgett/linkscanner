@@ -78,7 +78,6 @@
     "cross-fetch": "^3.0.2",
     "es6-promise": "^4.2.6",
     "fetch-mock": "^7.3.3",
-    "robots-parser": "^2.1.1",
     "universal-url": "^2.0.0",
     "yargs": "^13.2.4"
   }

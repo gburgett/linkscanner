@@ -2,7 +2,7 @@ import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/strea
 require('es6-promise/auto')
 import { ReadLock } from 'async-toolbox'
 import 'cross-fetch/polyfill'
-import { Robots } from 'robots-parser'
+import { Robots } from '../vendor/robots-parser'
 
 import { defaultFetchInterface, FetchInterface } from './fetch_interface'
 import { defaultLogger, Logger } from './logger'

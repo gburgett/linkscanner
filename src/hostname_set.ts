@@ -1,7 +1,7 @@
 import { Limiter, Semaphore } from 'async-toolbox'
 import * as crossFetch from 'cross-fetch'
-import robotsParser, { Robots } from 'robots-parser'
 import { Duplex } from 'stream'
+import robotsParser, { Robots } from '../vendor/robots-parser'
 
 import { Interval } from 'limiter'
 import { FetchInterface } from './fetch_interface'
