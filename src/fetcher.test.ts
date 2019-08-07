@@ -32,21 +32,22 @@ describe('Fetcher', () => {
       logger: console,
     })
 
-  it('gets a result from a page', async function() {
+  it.skip('gets a result from a page', async function() {
     this.timeout(10000)
     const uut = new Fetcher({
       // note: intentionally not setting a mock fetcher.  This is a true integration test.
     })
 
     // act
-    await uut.writeAsync({ url: parseUrl('https://jsonplaceholder.typicode.com') })
+    await uut.writeAsync({ url: parseUrl('https://github.com/gburgett/linkscanner') })
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
+    expect((result[0] as ErrorResult).error).to.be.undefined
     expect(result[0].type).to.eq('success')
     expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('jsonplaceholder.typicode.com')
-    expect(result[0].url.toString()).to.eq('https://jsonplaceholder.typicode.com/')
+    expect(result[0].host).to.eq('github.com')
+    expect(result[0].url.toString()).to.eq('https://github.com/gburgett/linkscanner')
   })
 
   it('performs a HEAD request when the node is a leaf', async () => {
