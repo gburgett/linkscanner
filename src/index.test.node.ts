@@ -10,7 +10,7 @@ import { URL } from './url'
 import { Options } from './util'
 
 describe('Linkscanner', () => {
-  let options: Options<Args>
+  const options: Options<Args> = {}
   let app: Express
   let server: Server
   let baseUrl: string
