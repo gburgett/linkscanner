@@ -1,4 +1,4 @@
-var URL = require('url').URL;
+var URL = require('universal-url').URL;
 
 /**
  * Trims the white space from the start and end of the line.
@@ -320,7 +320,7 @@ Robots.prototype._getRule = function (url, ua) {
 	var parsedUrl = parseUrl(url) || {};
 	var userAgent = formatUserAgent(ua || '*');
 
-	parsedUrl.port = parsedUrl.port || '80';
+	parsedUrl.port = parsedUrl.port || 80;
 
 	// The base URL must match otherwise this robots.txt is not valid for it.
 	if (parsedUrl.protocol !== this._url.protocol ||

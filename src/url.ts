@@ -1,7 +1,5 @@
-import { Transform } from 'async-toolbox/stream'
 import * as stream from 'stream'
 import { URL } from 'universal-url'
-import { Chunk } from './model'
 
 export { URL } from 'universal-url'
 
