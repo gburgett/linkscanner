@@ -76,7 +76,7 @@ export interface Args extends LinkscannerOptions {
   progress: boolean
 }
 
-const runDefaults: Readonly<Args> = {
+export const runDefaults: Readonly<Args> = {
   ...linkscannerDefaults,
   verbose: false,
   debug: false,
@@ -126,7 +126,8 @@ class Linkscanner extends Transform {
     objectMode: true,
     highWaterMark: 0,
   })
-  private readonly _results: Readable<Result>
+  private readonly _pipeline: Readable<Result>
+  private readonly _fetchInterface: FetchInterfaceWrapper
 
   constructor(options: Options<LinkscannerOptions>) {
     super({
@@ -138,7 +139,8 @@ class Linkscanner extends Transform {
       linkscannerDefaults,
       options)
 
-    this._results = this.initPipeline()
+    this._fetchInterface = this.initFetchInterface()
+    this._pipeline = this.initPipeline()
   }
 
   /**
@@ -161,8 +163,24 @@ class Linkscanner extends Transform {
   }
 
   public _flush(cb: TransformCallback): void {
-    this._results.on('end', () => { cb() })
+    this._pipeline.on('end', () => { cb() })
     this._source.end()
+  }
+
+  public suspend() {
+    this._fetchInterface.pause()
+    this._pipeline.pause()
+    this._options.logger.debug(`suspend at ${new Date().toLocaleDateString()}`)
+    this.emit('suspend')
+    return this
+  }
+
+  public unsuspend() {
+    this._fetchInterface.resume()
+    this._pipeline.resume()
+    this._options.logger.debug(`unsuspend at ${new Date().toLocaleDateString()}`)
+    this.emit('unsuspend')
+    return this
   }
 
   private initPipeline() {
@@ -170,7 +188,7 @@ class Linkscanner extends Transform {
       new Set(Array.from(this._options.hostnames)) : undefined
     const results = BuildPipeline(this._source, {
       ...this._options,
-      fetch: this.fetchInterface(),
+      fetch: this._fetchInterface,
       hostnames,
     })
 
@@ -186,7 +204,7 @@ class Linkscanner extends Transform {
     return results
   }
 
-  private fetchInterface(): FetchInterface {
+  private initFetchInterface(): FetchInterfaceWrapper {
     const fetch: FetchInterface = crossFetch
 
     const {headers, userAgent, maxConcurrency, timeout} = this._options

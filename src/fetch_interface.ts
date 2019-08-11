@@ -23,6 +23,10 @@ export class FetchInterfaceWrapper implements FetchInterface {
   private readonly semaphore: Semaphore
   private readonly _options: FetchWrapperOptions
 
+  /** contains a promise if currently paused */
+  private _pause: Promise<void> | undefined = undefined
+  private _resume: (() => void) | undefined = undefined
+
   constructor(fetch: FetchInterface, options?: Options<FetchWrapperOptions>) {
     this._options = assign({
       headers: {},
@@ -58,10 +62,28 @@ export class FetchInterfaceWrapper implements FetchInterface {
       }
     } as any
 
-    this.fetch = this.semaphore.synchronize((req: Request) => {
+    this.fetch = this.semaphore.synchronize(async (req: Request) => {
+      if (this._pause) {
+        await this._pause
+      }
+
       // timeout inside the synchronize so as to avoid problems with maxConcurrency
       return timeoutWrapper(() => fetch.fetch(req), timeout)
     })
+  }
+
+  public pause(): void {
+    this._pause = new Promise((resolve) => {
+      this._resume = () => {
+        resolve()
+      }
+    })
+  }
+
+  public resume() {
+    if (this._resume) {
+      this._resume()
+    }
   }
 
 }

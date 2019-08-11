@@ -14,6 +14,8 @@ export interface ProgressBarOptions {
 }
 
 interface ProgressBarState {
+  currentPause: number | undefined
+  pauses: Array<{ start: number, end: number }>
   checked: Set<string>
   all: Set<string>
   latest?: string
@@ -22,7 +24,6 @@ interface ProgressBarState {
 }
 
 export class ProgressBar extends Writable implements Logger {
-
   private readonly _options: ProgressBarOptions
   private readonly _chalk: Chalk
 
@@ -30,6 +31,8 @@ export class ProgressBar extends Writable implements Logger {
     checked: new Set<string>(),
     all: new Set<string>(),
     isRendered: false,
+    currentPause: undefined,
+    pauses: [],
   }
 
   constructor(options?: Options<ProgressBarOptions>) {
@@ -51,6 +54,8 @@ export class ProgressBar extends Writable implements Logger {
       resultsStream.on('url', this._onUrl)
       resultsStream.on('fetch', this._onFetch)
       resultsStream.on('response', this._onResponse)
+      resultsStream.on('suspend', this._onPause)
+      resultsStream.on('unsuspend', this._onResume)
       this.state.start = isomorphicPerformance.now()
     })
   }
@@ -68,45 +73,52 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   public render = async () => {
-    const {checked, all, latest} = this.state
+    const {checked, all, latest, currentPause} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
     const pct = Math.min(1.0, checked.size / all.size)
-    const elapsed = this.state.start && isomorphicPerformance.now() - this.state.start
 
     // tslint:disable-next-line: no-shadowed-variable
     const chalk = this._chalk
 
+    let elapsed = this.elapsed()
     if (!elapsed) {
       // nothing to do
       this.clear()
       return
     }
 
-    const msgParts = [
-      `${(elapsed / 1000).toFixed(0).padStart(4)}s `,
-      ` ${checked.size.toString().padStart(4)} / ${all.size.toString().padStart(4)}`,
-      ` (${Math.floor(pct * 100).toString().padStart(3)}%)`,
+    let numChecked = ` ${checked.size.toString().padStart(4)} / ${all.size.toString().padStart(4)}`
+    let percentage = ` (${Math.floor(pct * 100).toString().padStart(3)}%)`
+
+    const topLineParts = [
+      elapsed,
+      numChecked,
+      percentage,
     ]
 
-    const barTotalWidth = width - (msgParts.reduce((sum, part) => sum + part.length, 0)) - 2
+    const barTotalWidth = width - (topLineParts.reduce((sum, part) => sum + part.length, 0)) - 2
     const barSize = Math.floor(pct * barTotalWidth)
-    msgParts.splice(1, 0,
-      `${'\u2588'.repeat(barSize)}${' '.repeat(barTotalWidth - barSize)}|`,
-    )
+    let bar = `${'\u2588'.repeat(barSize)}${' '.repeat(barTotalWidth - barSize)}|`
 
-    msgParts[0] = chalk.cyan(msgParts[0])
-    msgParts[1] = chalk.green(msgParts[1])
-    msgParts[2] = chalk.cyan(msgParts[2])
-    msgParts[3] = chalk.cyan(msgParts[3])
+    elapsed = chalk.cyan(elapsed)
+    bar = this.state.currentPause ? chalk.gray(bar) : chalk.green(bar)
+    numChecked = chalk.cyan(numChecked)
+    percentage = chalk.cyan(percentage)
 
-    const msg = msgParts.join('')
+    topLineParts.splice(1, 0, bar)
+
+    const latestLine = currentPause === undefined ?
+      (latest || '') :
+      `paused ${((isomorphicPerformance.now() - currentPause) / 1000).toFixed(0).padStart(4)}s`
+
+    const msg = topLineParts.join('')
     // log a cleared blank line
     logger.error('\x1b[2k')
     // clear the current line before writing the msg
     logger.error('\x1b[2K' + msg)
     // write the latest hit line
-    logger.error('\x1b[2K' + chalk.dim.cyan((latest || '').substr(0, width)) +
+    logger.error('\x1b[2K' + chalk.dim.cyan((latestLine).substr(0, width)) +
       // go up three lines after
       '\x1b[F\x1b[F\x1b[F')
 
@@ -152,6 +164,48 @@ export class ProgressBar extends Writable implements Logger {
   private _onResponse = (resp: Response, req: Request) => {
     this.state.latest = `${resp.status} ${resp.url || req.url}`
     this.render()
+  }
+
+  private _onPause = () => {
+    if (this.state.currentPause) {
+      return
+    }
+
+    this.state.currentPause = isomorphicPerformance.now()
+    this.render()
+  }
+
+  private _onResume = () => {
+    if (!this.state.currentPause) {
+      return
+    }
+
+    this.state.pauses.push({
+      start: this.state.currentPause,
+      end: isomorphicPerformance.now(),
+    })
+    this.state.currentPause = undefined
+    this.render()
+  }
+
+  private elapsed(): string | undefined {
+    if (!this.state.start) {
+      return
+    }
+    // if paused, don't advance the elapsed clock
+    const now = this.state.currentPause === undefined ?
+      isomorphicPerformance.now() :
+      this.state.currentPause
+
+    let elapsed = now - this.state.start
+
+    // remove all the pauses from the elapsed clock
+    this.state.pauses.forEach(({start, end}) => {
+      const pauseLength = end - start
+      elapsed -= pauseLength
+    })
+
+    return `${(elapsed / 1000).toFixed(0).padStart(4)}s `
   }
 
 }

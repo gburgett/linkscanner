@@ -1,6 +1,9 @@
 import yargs from 'yargs'
 
-import Linkscanner from '.'
+import chalk from 'chalk'
+import Linkscanner, { runDefaults } from '.'
+import { debugLogger, defaultLogger } from './logger'
+import { assign } from './util'
 
 const source: string[] = []
 const argv = yargs
@@ -86,16 +89,72 @@ const argv = yargs
     choices: ['a', 'link', 'img', 'script', 'form', 'iframe', 'all'],
   }).argv
 
-Linkscanner.run([...source, ...argv._], {
-    ...argv,
-  })
+const options = assign({},
+  runDefaults,
+  argv && ({
+    progress: runDefaults.progress && !argv.debug,
+    logger: argv.debug ? debugLogger : defaultLogger,
+  }),
+  argv)
+
+let builder = Linkscanner.build(options)
+  .addFormatter(options.formatter)
+
+if (options.progress) {
+  // Attach a progress bar
+  builder = builder.progress()
+}
+const logger = builder._options.logger
+const linkscanner = builder.get()
+
+let interrupted = false
+process.on('SIGTSTP', () => {
+  logger.debug('SIGTSTP')
+  if (interrupted) {
+    logger.error(chalk`{yellow Linkscanner resumed at ${new Date().toLocaleString()}}`)
+    linkscanner.unsuspend()
+    interrupted = false
+    return
+  }
+  interrupted = true
+  linkscanner.suspend()
+
+  if (builder._progress) {
+    builder._progress.clear()
+  }
+
+  logger.error(
+    chalk`{yellow Linkscanner paused at ${new Date().toLocaleString()}}
+  Press Ctrl-Z to resume, or Ctrl-Q to quit.
+`)
+})
+
+linkscanner.run([...source, ...argv._])
   .then(
     () => {
+      logger.debug('exit')
       process.exit(0)
     },
     (ex: any) => {
       // tslint:disable-next-line:no-console
-      console.error(ex)
+      logger.error(ex)
       process.exit(1)
     },
   )
+
+let keepAliveTimeout: NodeJS.Timeout | undefined
+keepAlive()
+/**
+ * This keeps the process running even when we're paused - since we're waiting
+ * on a signal, all callbacks in the queue have executed.  In reality we have
+ * an entire chain of callbacks waiting on the promise deep inside
+ * FetchInterfaceWrapper.resume()
+ */
+function keepAlive() {
+  if (builder._progress) {
+    builder._progress.render()
+  }
+
+  if (keepAliveTimeout) { clearTimeout(keepAliveTimeout) }
+  keepAliveTimeout = setTimeout(keepAlive, 1000)
+}
