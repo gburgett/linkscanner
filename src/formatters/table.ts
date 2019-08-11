@@ -9,6 +9,15 @@ export interface TableFormatterOptions {
   verbose?: boolean
 }
 
+const header = [
+  'status',
+  'method',
+  'url'.padEnd(80),
+  'ms'.padStart(4),
+  'parent'.padEnd(80),
+  'error',
+]
+
 export class TableFormatter extends Writable {
   private readonly options: TableFormatterOptions
   private wroteHeader = false
@@ -35,23 +44,17 @@ export class TableFormatter extends Writable {
       return
     }
 
-    const line = [
+    let line = [
       result.status && result.status.toFixed(0),
       result.method && result.method.padEnd(4),
       result.url.toString().padEnd(80),
       'ms' in result && result.ms.toFixed(0).padStart(4),
       result.parent && result.parent.url.toString(),
+      'error' in result && result.error.toString(),
     ].map((l) => l || '')
 
     if (verbose) {
       if (!this.wroteHeader) {
-        const header = [
-          'status',
-          'method',
-          'url'.padEnd(80),
-          'ms'.padStart(4),
-          'parent'.padEnd(80),
-        ]
         logger.log('| ' + header.join(' | ') + ' |')
         const dividerLine = header.map((h) => h.length).reduce((str, length) => {
           return str + ' ' + '-'.repeat(length) + ' |'
@@ -60,11 +63,7 @@ export class TableFormatter extends Writable {
         this.wroteHeader = true
       }
 
-      line[0] = line[0].padEnd(6)
-      line[1] = line[1].padEnd(6)
-      line[2] = line[2].padEnd(80)
-      line[3] = line[3].padEnd(4)
-      line[4] = line[4].padEnd(80)
+      line = line.map((l, i) => l.padEnd(header[i].length))
       logger.log('| ' + line.join(' | ') + ' |')
 
     } else {
