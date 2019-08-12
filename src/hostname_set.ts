@@ -7,7 +7,7 @@ import { Interval } from 'limiter'
 import { FetchInterface } from './fetch_interface'
 import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
-import { Parsers } from './parsers';
+import { Parsers } from './parsers'
 import { parseUrl, URL } from './url'
 import { assign, Options } from './util'
 

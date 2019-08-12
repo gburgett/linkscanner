@@ -379,8 +379,8 @@ Allow: *`)
 
     // act
     const errors: any[] = []
-    uut.on('error', (err) => {
-      errors.push(err)
+    uut.on('error', (e) => {
+      errors.push(e)
     })
 
     // attach to data so that the stream flows
