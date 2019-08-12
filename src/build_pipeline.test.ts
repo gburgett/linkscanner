@@ -393,13 +393,12 @@ Allow: *`)
       err = ex
     }
 
-    const expectedMsg = 'Unable to parse URL \'some invalid URL\'\n\t' +
-      'TypeError [ERR_INVALID_URL]: Invalid URL: some invalid URL'
+    const expectedMsg = 'Unable to parse URL \'some invalid URL\''
     expect(err).to.not.be.undefined
-    expect(err.message).to.eq(expectedMsg)
+    expect(err.message).to.include(expectedMsg)
 
     expect(errors.length).to.eq(1)
-    expect(errors[0].message).to.eq(expectedMsg)
+    expect(errors[0].message).to.include(expectedMsg)
   })
 
   it('doesnt scan HTML when --only=json', async () => {
