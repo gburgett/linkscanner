@@ -50,6 +50,12 @@ export const isomorphicPerformance: { now(): number } = typeof (performance) != 
 export function debugStreams(streams: { [stream: string]: Readable }, logger: Logger = console): NodeJS.Timeout {
   const states: { [stream: string]: any } = {}
 
+  Object.keys(streams).forEach((name) => {
+    streams[name].on('error', (err) => {
+      logger.error(`${name}: ${err}`)
+    })
+  })
+
   return setInterval(() => {
     Object.keys(streams).forEach((name) => {
       const stream = streams[name] as any

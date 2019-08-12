@@ -2,6 +2,7 @@ import { ParallelTransform, Readable } from 'async-toolbox/stream'
 import { Interval } from 'limiter'
 import * as path from 'path'
 
+import { PassThrough } from 'stream'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { EventForwarder } from './event_forwarder'
 import { FetchInterface } from './fetch_interface'
@@ -54,6 +55,8 @@ export function BuildPipeline(
     },
   )
 
+  const urlParser = parseUrls()
+
   const sourceUrlTracker = new ParallelTransform({
     objectMode: true,
     highWaterMark: 0,
@@ -68,28 +71,23 @@ export function BuildPipeline(
     },
   })
 
-  // the source is everything up to the reentry
-  source = source
-    .pipe(parseUrls())
-    .pipe(sourceUrlTracker)
-
   // The reentry decides when we're actually done, by receiving recursive URLs
   // and pushing EOF chunks into the pipeline
-  const reentry = source.pipe(new Reentry({
+  const reentry = new Reentry({
     logger,
-  }), { end: false })
+  })
 
   // The fetcher performs the heavy lifting of invoking fetch
-  const fetcher = reentry
-    .pipe(new DivergentStreamWrapper({
-      objectMode: true,
-      createStream: (host) => hostnameSet.streamFor(host),
-    }))
+  const fetcher = new DivergentStreamWrapper({
+    objectMode: true,
+    createStream: (host) => hostnameSet.streamFor(host),
+  })
 
   // The results come out of the fetcher, piping EOF tokens back to the Reentry
   // so that the Reentry can decide when to end the stream.
-  const results = fetcher
-    .pipe(handleEOF(reentry))
+  const eofHandler = handleEOF(reentry)
+
+  const results = new PassThrough({ objectMode: true })
 
   new EventForwarder({
     only: ['url', 'fetch', 'response', 'EOS'],
@@ -110,17 +108,39 @@ export function BuildPipeline(
   // Reentry for recursive fetching.
   fetcher.on('url', onUrl)
 
-  // debugStreams({
-  //   source,
-  //   reentry,
-  //   fetcher,
-  //   results,
-  // }, logger)
-
-  source.on('data', (url) => {
+  sourceUrlTracker.on('data', (url) => {
     // forward source URLs as URL events too, with no parent
     results.emit('url', { url })
   })
+
+  source
+    .pipe(urlParser)
+    .pipe(sourceUrlTracker)
+      // reentry is responsible for ending itself when the EOF handler sends the EOF back
+    .pipe(reentry, { end: false })
+    .pipe(fetcher)
+    .pipe(eofHandler)
+    .pipe(results)
+
+  new EventForwarder({
+    only: ['error'],
+  })
+    .from(urlParser)
+    .from(sourceUrlTracker)
+    .from(reentry)
+    .from(fetcher)
+    .from(eofHandler)
+    .to(results)
+
+  // debugStreams({
+  //   source,
+  //   urlParser,
+  //   sourceUrlTracker,
+  //   reentry,
+  //   fetcher,
+  //   eofHandler,
+  //   results,
+  // }, logger)
 
   // The CLI or consuming program needs the readable stream of results
   return results

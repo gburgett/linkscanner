@@ -8,6 +8,8 @@ import { BuildPipeline, BuildPipelineOptions } from './build_pipeline'
 import { Result, SuccessResult } from './model'
 import { Options } from './util'
 
+// tslint:disable: no-unused-expression
+
 describe('BuildPipeline', () => {
   let options: Options<BuildPipelineOptions>
   let fetchMockSandbox: fetchMock.FetchMockSandbox
@@ -368,5 +370,35 @@ Allow: *`)
     expect(urls.length).to.eq(2)
     expect(urls[0].url.toString()).to.eq('http://test.com/testpage')
     expect(urls[1].url.toString()).to.eq('http://other.com/')
+  })
+
+  it('forwards errors to the results stream', async () => {
+    const source = toReadable(['some invalid URL'])
+
+    const uut = BuildPipeline(source, options)
+
+    // act
+    const errors: any[] = []
+    uut.on('error', (err) => {
+      errors.push(err)
+    })
+
+    // attach to data so that the stream flows
+    uut.on('data', () => {return})
+    let err: Error
+    try {
+      await onceAsync(uut, 'end')
+      throw new Error('Should not successfully end')
+    } catch (ex) {
+      err = ex
+    }
+
+    const expectedMsg = 'Unable to parse URL \'some invalid URL\'\n\t' +
+      'TypeError [ERR_INVALID_URL]: Invalid URL: some invalid URL'
+    expect(err).to.not.be.undefined
+    expect(err.message).to.eq(expectedMsg)
+
+    expect(errors.length).to.eq(1)
+    expect(errors[0].message).to.eq(expectedMsg)
   })
 })
