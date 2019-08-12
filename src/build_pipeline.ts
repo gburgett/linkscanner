@@ -22,7 +22,9 @@ export interface BuildPipelineOptions {
   'exclude-external': boolean
   maxConcurrency: number | { tokens: number, interval: Interval }
 
-  parsers: Parsers
+  include: string[]
+  only: string[]
+
   logger: Logger
   fetch?: FetchInterface
 }

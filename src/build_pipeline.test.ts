@@ -401,4 +401,28 @@ Allow: *`)
     expect(errors.length).to.eq(1)
     expect(errors[0].message).to.eq(expectedMsg)
   })
+
+  it('doesnt scan HTML when --only=json', async () => {
+    fetchMockSandbox.get('http://test.com/testapi.json',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: `{ "link": "/testpage.htm" }`,
+      })
+    fetchMockSandbox.headOnce('http://test.com/testpage.htm', 200)
+
+    const source = toReadable(['http://test.com/testapi.json'])
+
+    const uut = BuildPipeline(source, options)
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(2)
+    expect(result[0].url.toString()).to.eq('http://test.com/testapi.json')
+    expect(result[1].url.toString()).to.eq('http://test.com/testpage.htm')
+    expect((result[1] as SuccessResult).method).to.eq('HEAD')
+  })
 })

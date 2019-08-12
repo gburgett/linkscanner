@@ -39,6 +39,7 @@ interface LinkscannerOptions {
   recursive: boolean | number
   excludeExternal: boolean
   include: string[]
+  only: string[]
 
   /** The maximum simultaneous fetch requests that can be running. */
   maxConcurrency: number | { tokens: number, interval: Interval }
@@ -63,6 +64,13 @@ const linkscannerDefaults: Readonly<LinkscannerOptions> = {
   include: [
     'a[href]',
     'link[rel="canonical"]',
+  ],
+  only: [
+    'html',
+    'json',
+    'pdf',
+    'text',
+    'default',
   ],
   logger: defaultLogger,
 }

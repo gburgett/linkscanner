@@ -85,8 +85,14 @@ const argv = yargs
     alias: 'i',
     array: true,
     type: 'string',
-    description: 'CSS Selector for which HTML elements that should be scanned',
-    choices: ['a', 'link', 'img', 'script', 'form', 'iframe', 'all'],
+    description: 'CSS Selector for which HTML elements that should be scanned.  ' +
+      'Examples: "a", "link[rel=\\"canonical\\"]", "img", "script", "form", "iframe", "all"',
+  })
+  .option('only', {
+    array: true,
+    type: 'string',
+    description: 'A content type (or list of content types) to parse.  ' +
+      'All other content types will not be scanned for links.',
   }).argv
 
 const options = assign({},

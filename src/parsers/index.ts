@@ -34,7 +34,8 @@ const NullParser: Parser = {
   },
 }
 
-export const defaultParsers = (options?: Options<ParserOptions>) => ({
+export const defaultParsers = (options?: Options<ParserOptions & { only: string[] }>) => {
+  const parsers: Parsers = {
     'default': new RegexpParser(options),
     'text/html': new CheerioParser(options),
     'text': new RegexpParser(options),
@@ -45,7 +46,27 @@ export const defaultParsers = (options?: Options<ParserOptions>) => ({
     'font': NullParser,
     'application/pdf': NullParser,
     'json': new JsonParser(options),
-  })
+  }
+
+  const only = options && options.only
+  if (only && only.length > 0) {
+    Object.keys(parsers).forEach((key) => {
+      if (only.includes(key)) {
+        return
+      }
+      // text/html => html, application/vnd.blah+json => json
+      const lastPart = key.split(/[\/\+]/).filter((p) => p.length > 0).pop()
+      if (lastPart && only.includes(lastPart)) {
+        return
+      }
+
+      // Don't download and scan this key
+      parsers[key] = NullParser
+    })
+  }
+
+  return parsers
+}
 
 export function findParser(parsers: Parsers, mimeType: string | null): Parser {
   mimeType = mimeType || 'default'
