@@ -19,7 +19,7 @@ export function parseUrls(): stream.Transform {
         try {
           // skip whitespace lines
           if (/\S/.test(strChunk)) {
-            this.push(parseUrl(strChunk))
+            this.push(parseUrl(strChunk.trim()))
           }
         } catch (ex) {
           done(new Error(`Unable to parse URL '${strChunk}'\n\t${ex}`))
