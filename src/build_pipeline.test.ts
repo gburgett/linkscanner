@@ -221,6 +221,44 @@ Allow: *`)
     expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
   })
 
+  it('Heads same-host images and PDFs found on page', async () => {
+    fetchMockSandbox.get('http://test.com/testpage',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+        body: `<html><body>
+          <a href="http://test.com/testpdf.pdf">some pdf</a>
+          <a href="http://test.com/testimg.png">some image</a>
+        </body></html>`,
+      })
+    fetchMockSandbox.headOnce('http://test.com/testpdf.pdf', 200)
+    fetchMockSandbox.headOnce('http://test.com/testimg.png', 200)
+
+    const source = toReadable(['http://test.com/testpage'])
+
+    const uut = BuildPipeline(source, {
+      ...options,
+      recursive: true,
+    })
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(3)
+
+    expect((result[1] as SuccessResult).status).to.eq(200)
+    expect(result[1].host).to.eq('test.com')
+    expect(result[1].url.toString()).to.eq('http://test.com/testpdf.pdf')
+    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
+
+    expect((result[2] as SuccessResult).status).to.eq(200)
+    expect(result[2].host).to.eq('test.com')
+    expect(result[2].url.toString()).to.eq('http://test.com/testimg.png')
+    expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage')
+  })
+
   it('does not simple recurse when recursive: 0', async () => {
     fetchMockSandbox.get('http://test.com/testpage',
       {

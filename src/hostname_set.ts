@@ -7,6 +7,7 @@ import { Interval } from 'limiter'
 import { FetchInterface } from './fetch_interface'
 import { Fetcher } from './fetcher'
 import { defaultLogger, Logger } from './logger'
+import { Parsers } from './parsers';
 import { parseUrl, URL } from './url'
 import { assign, Options } from './util'
 
@@ -15,6 +16,7 @@ interface HostnameSetOptions {
   ignoreRobotsFile: boolean
   userAgent?: string
   logger: Logger
+  parsers?: Parsers
   fetch: FetchInterface
   maxConcurrency: number | { tokens: number, interval: Interval }
 }

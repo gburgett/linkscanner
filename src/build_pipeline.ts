@@ -1,5 +1,6 @@
 import { ParallelTransform, Readable } from 'async-toolbox/stream'
 import { Interval } from 'limiter'
+import * as path from 'path'
 
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
 import { EventForwarder } from './event_forwarder'
@@ -7,6 +8,7 @@ import { FetchInterface } from './fetch_interface'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
 import { Result, SkippedResult, SuccessResult } from './model'
+import { defaultParsers, extensionToMimeType, findParser, NullParser, Parsers } from './parsers'
 import { handleEOF, Reentry } from './reentry'
 import { parseUrls, URL } from './url'
 import { assign, Options } from './util'
@@ -19,6 +21,7 @@ export interface BuildPipelineOptions {
   'exclude-external': boolean
   maxConcurrency: number | { tokens: number, interval: Interval }
 
+  parsers: Parsers
   logger: Logger
   fetch?: FetchInterface
 }
@@ -41,6 +44,7 @@ export function BuildPipeline(
     'followRedirects': false,
     'recursive': false,
     'exclude-external': false,
+    'parsers': defaultParsers(args),
   }, args)
   const hostnameSet = new HostnameSet(
     hostnames,
@@ -148,10 +152,20 @@ export function BuildPipeline(
         return
       }
 
-      const isLeafNode: boolean =
+      let isLeafNode: boolean = false
         // external URLs are always leafs
-        !hostnameSet.hostnames.has(url.hostname) ||
-        recursionLimit != Infinity && countParents(parent) >= recursionLimit
+      if (!hostnameSet.hostnames.has(url.hostname)) { isLeafNode = true }
+      if (recursionLimit != Infinity && countParents(parent) >= recursionLimit) { isLeafNode = true }
+
+      const expectedMimeType: string | undefined = extensionToMimeType[path.extname(url.pathname)]
+      if (expectedMimeType) {
+        const parser = findParser(options.parsers, expectedMimeType)
+        if (parser && parser == NullParser) {
+          // HEAD any URL where we wouldn't parse the body for links (i.e. PDF, PNG)
+          isLeafNode = true
+        }
+      }
+
       if (isLeafNode) {
         logger.debug('leaf', url.toString())
       }
