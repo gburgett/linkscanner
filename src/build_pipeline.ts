@@ -77,6 +77,9 @@ export function BuildPipeline(
   // and pushing EOF chunks into the pipeline
   const reentry = new Reentry({
     logger,
+    // it has a high input queue, so that the progress bar can have a better
+    // idea of the number of incoming source URLs when we have a big input list.
+    highWaterMark: 1024,
   })
 
   // The fetcher performs the heavy lifting of invoking fetch
