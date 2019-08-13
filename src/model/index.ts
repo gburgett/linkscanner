@@ -12,6 +12,7 @@ export interface SuccessResult extends ResultCommon {
   type: 'success'
   method: string
   status: number
+  contentType: string | null
   ms: number
   links: URL[]
   leaf?: boolean

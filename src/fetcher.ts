@@ -6,7 +6,7 @@ import { Robots } from '../vendor/robots-parser'
 
 import { defaultFetchInterface, FetchInterface } from './fetch_interface'
 import { defaultLogger, Logger } from './logger'
-import { Chunk, ErrorResult, Result, SkippedResult } from './model'
+import { Chunk, ErrorResult, Result, SkippedResult, SuccessResult } from './model'
 import { defaultParsers, findParser, ParserOptions, Parsers } from './parsers'
 import { EOF, isEOF } from './reentry'
 import { parseUrl, URL } from './url'
@@ -139,9 +139,10 @@ export class Fetcher extends ParallelTransform {
     const end = isomorphicPerformance.now()
 
     // Assign back to the same object, so that the emitted object tree is maintained.
-    const fullResult: Result = Object.assign(partialResult, {
+    const fullResult: SuccessResult = Object.assign(partialResult, {
       type: 'success' as const,
       status: response.status,
+      contentType,
       ms: end - start,
     })
 

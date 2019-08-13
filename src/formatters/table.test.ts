@@ -21,6 +21,7 @@ describe('TableFormatter', () => {
       status: 200,
       method: 'GET',
       url: parseUrl('http://test.com/#'),
+      contentType: 'text/html',
       host: 'test.com',
       ms: 123,
     } as Result)
@@ -28,7 +29,7 @@ describe('TableFormatter', () => {
 
     // assert
     expect(messages.length).to.eq(1)
-    expect(messages[0]).to.deep.eq(`200\tGET \t${'http://test.com/#'.padEnd(80)}\t 123\t\t`)
+    expect(messages[0]).to.deep.eq(`200\tGET \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t\t`)
   })
 
   it('logs verbose output to the console', async () => {
@@ -46,6 +47,7 @@ describe('TableFormatter', () => {
       status: 200,
       method: 'GET',
       url: parseUrl('http://test.com/#'),
+      contentType: 'text/html',
       host: 'test.com',
       ms: 123,
       links: [],
@@ -69,9 +71,9 @@ describe('TableFormatter', () => {
     // assert
     expect(messages.length).to.eq(4)
     // tslint:disable: max-line-length
-    expect(messages[0]).to.eq('| status | method | url                                                                              |   ms | parent                                                                           | error |')
-    expect(messages[1]).to.eq('| ------ | ------ | -------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------- | ----- |')
-    expect(messages[2]).to.eq('| 200    | GET    | http://test.com/#                                                                |  123 |                                                                                  |       |')
-    expect(messages[3]).to.eq('|        | GET    | http://test.com/2                                                                |  456 | http://test.com/#                                                                | Error: test |')
+    expect(messages[0]).to.eq('| status | method | url                                                                              | contentType      |   ms | parent                                                                           | error |')
+    expect(messages[1]).to.eq('| ------ | ------ | -------------------------------------------------------------------------------- | ---------------- | ---- | -------------------------------------------------------------------------------- | ----- |')
+    expect(messages[2]).to.eq('| 200    | GET    | http://test.com/#                                                                | text/html        |  123 |                                                                                  |       |')
+    expect(messages[3]).to.eq('|        | GET    | http://test.com/2                                                                |                  |  456 | http://test.com/#                                                                | Error: test |')
   })
 })
