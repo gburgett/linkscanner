@@ -7,6 +7,8 @@ import { assign, isomorphicPerformance, Options } from './util'
 
 export interface ProgressBarOptions {
   logger: Logger
+  /** Set this if debug logging is enabled. */
+  debug?: boolean
   /** Width of one line of output terminal.  Undefined to use process.stdout.columns */
   width?: number
 
@@ -141,9 +143,15 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   public debug(message?: any, ...optionalParams: any[]): void {
-    this.clear()
+    if (this._options.debug) {
+      this.clear()
+    }
+
     this._options.logger.debug(message, ...optionalParams)
-    this.render()
+
+    if (this._options.debug) {
+      this.render()
+    }
   }
 
   public error(message?: any, ...optionalParams: any[]): void {

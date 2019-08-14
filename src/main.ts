@@ -108,7 +108,9 @@ let builder = Linkscanner.build(options)
 
 if (options.progress) {
   // Attach a progress bar
-  builder = builder.progress()
+  builder = builder.progress({
+    debug: argv.debug,
+  })
 }
 const logger = builder._options.logger
 const linkscanner = builder.get()

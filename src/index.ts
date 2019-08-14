@@ -11,7 +11,7 @@ import { ConsoleFormatter, ConsoleFormatterOptions } from './formatters/console'
 import { TableFormatter, TableFormatterOptions } from './formatters/table'
 import { debugLogger, defaultLogger, Logger } from './logger'
 import { Result } from './model'
-import { ProgressBar } from './progress_bar'
+import { ProgressBar, ProgressBarOptions } from './progress_bar'
 import { loadSource } from './source'
 import { assign, Options } from './util'
 
@@ -119,7 +119,9 @@ class Linkscanner extends Transform {
 
     if (options.progress) {
       // Attach a progress bar
-      builder = builder.progress()
+      builder = builder.progress({
+        debug: options.debug,
+      })
     }
 
     return builder.get().run(source)
@@ -296,13 +298,14 @@ class Builder {
    * replace the logger and intercept it, in order to clear and rewrite itself
    * whenever logging takes place.
    */
-  public progress(): Builder {
+  public progress(options?: Options<ProgressBarOptions>): Builder {
     if (this._progress) {
       return this
     }
 
     const _progress = new ProgressBar({
       logger: this._options.logger,
+      ...options,
     })
 
     return new Builder({
