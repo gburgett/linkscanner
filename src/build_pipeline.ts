@@ -8,7 +8,7 @@ import { EventForwarder } from './event_forwarder'
 import { FetchInterface } from './fetch_interface'
 import { HostnameSet } from './hostname_set'
 import { defaultLogger, Logger } from './logger'
-import { Result, SkippedResult, SuccessResult } from './model'
+import { Chunk, Result, SkippedResult, SuccessResult } from './model'
 import { defaultParsers, extensionToMimeType, findParser, NullParser, Parsers } from './parsers'
 import { handleEOF, Reentry } from './reentry'
 import { parseUrls, URL } from './url'
@@ -20,6 +20,8 @@ export interface BuildPipelineOptions {
   ignoreRobotsFile: boolean
   recursive: boolean | number
   'exclude-external': boolean
+  /** Always executes a GET request even on leaf nodes */
+  forceGet: boolean
   maxConcurrency: number | { tokens: number, interval: Interval }
 
   include: string[]
@@ -49,6 +51,12 @@ export function BuildPipeline(
     'exclude-external': false,
     'parsers': defaultParsers(args),
   }, args)
+
+  const recursionLimit: number =
+    options.recursive === false ? 1 :
+      options.recursive === true ? Infinity :
+        options.recursive
+
   const hostnameSet = new HostnameSet(
     hostnames,
     {
@@ -69,7 +77,12 @@ export function BuildPipeline(
         hostnameSet.hostnames.add(url.hostname)
       }
       logger.debug('source URL', url.toString())
-      this.push(url)
+
+      const chunk: Chunk = {
+        url,
+        leaf: isLeafNode({ url }),
+      }
+      this.push(chunk)
     },
   })
 
@@ -113,9 +126,9 @@ export function BuildPipeline(
   // Reentry for recursive fetching.
   fetcher.on('url', onUrl)
 
-  sourceUrlTracker.on('data', (url) => {
+  sourceUrlTracker.on('data', (chunk) => {
     // forward source URLs as URL events too, with no parent
-    results.emit('url', { url })
+    results.emit('url', chunk)
   })
 
   source
@@ -167,40 +180,41 @@ export function BuildPipeline(
         return
       }
 
-      const recursionLimit: number =
-        options.recursive === false ? 1 :
-          options.recursive === true ? Infinity :
-            options.recursive
       if (recursionLimit != Infinity && countParents(parent) > recursionLimit) {
         // Do not recurse any deeper than the recursion limit
         logger.debug('recursive', url.toString(), parent.url.toString())
         return
       }
 
-      let isLeafNode: boolean = false
-        // external URLs are always leafs
-      if (!hostnameSet.hostnames.has(url.hostname)) { isLeafNode = true }
-      if (recursionLimit != Infinity && countParents(parent) >= recursionLimit) { isLeafNode = true }
+      const leaf = isLeafNode({url, parent})
 
-      const expectedMimeType: string | undefined = extensionToMimeType[path.extname(url.pathname)]
-      if (expectedMimeType) {
-        const parser = findParser(options.parsers, expectedMimeType)
-        if (parser && parser == NullParser) {
-          // HEAD any URL where we wouldn't parse the body for links (i.e. PDF, PNG)
-          isLeafNode = true
-        }
-      }
-
-      if (isLeafNode) {
+      if (leaf) {
         logger.debug('leaf', url.toString())
       }
 
       // forward this URL cause we're going to check it.
       results.emit('url', { url })
-      reentry.write({ url, parent, leaf: isLeafNode })
+      reentry.write({ url, parent, leaf })
     } catch (ex) {
       logger.error(ex)
     }
+  }
+
+  function isLeafNode({ url, parent }: { url: URL, parent?: SuccessResult }): boolean {
+    // external URLs are always leafs
+    if (!hostnameSet.hostnames.has(url.hostname)) { return true }
+    if (recursionLimit != Infinity && countParents(parent) >= recursionLimit) { return true }
+
+    const expectedMimeType: string | undefined = extensionToMimeType[path.extname(url.pathname)]
+    if (expectedMimeType) {
+      const parser = findParser(options.parsers, expectedMimeType)
+      if (parser && parser == NullParser) {
+        // HEAD any URL where we wouldn't parse the body for links (i.e. PDF, PNG)
+        return true
+      }
+    }
+
+    return false
   }
 }
 

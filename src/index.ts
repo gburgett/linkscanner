@@ -38,6 +38,7 @@ interface LinkscannerOptions {
   ignoreRobotsFile: boolean
   recursive: boolean | number
   excludeExternal: boolean
+  forceGet: boolean
   include: string[]
   only: string[]
 
@@ -56,6 +57,7 @@ const linkscannerDefaults: Readonly<LinkscannerOptions> = {
   ignoreRobotsFile: false,
   recursive: false,
   excludeExternal: false,
+  forceGet: false,
   maxConcurrency: 2,
   timeout: 10000,
 

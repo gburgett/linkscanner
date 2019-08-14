@@ -14,6 +14,8 @@ import { assign, Options } from './util'
 interface HostnameSetOptions {
   followRedirects: boolean,
   ignoreRobotsFile: boolean
+  /** Always executes a GET request even on leaf nodes */
+  forceGet: boolean
   userAgent?: string
   logger: Logger
   parsers?: Parsers
@@ -34,6 +36,7 @@ export class HostnameSet {
     this._options = assign({
       followRedirects: false,
       ignoreRobotsFile: false,
+      forceGet: false,
       logger: defaultLogger,
       fetch: crossFetch,
       maxConcurrency: 1,

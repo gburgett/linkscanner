@@ -17,6 +17,8 @@ export interface FetchOptions extends ParallelTransformOptions {
 
   acceptMimeTypes: string[]
   followRedirects: boolean
+  /** Always executes a GET request even on leaf nodes */
+  forceGet: boolean
 
   parsers: Parsers
   robots?: Robots
@@ -32,6 +34,7 @@ export class Fetcher extends ParallelTransform {
       {
         logger: defaultLogger,
         followRedirects: false,
+        forceGet: false,
         timeout: 30000,
         parsers: defaultParsers(options),
         acceptMimeTypes: ['text/html', 'application/json'],
@@ -60,7 +63,13 @@ export class Fetcher extends ParallelTransform {
   private async _fetch(chunk: Chunk, method?: 'GET' | 'HEAD'): Promise<void> {
     const { url, parent, leaf } = chunk
     const { followRedirects, logger } = this.options
-    method = method || (leaf ? 'HEAD' : 'GET')
+    if (!method) {
+      if (this.options.forceGet) {
+        method = 'GET'
+      } else {
+        method = leaf ? 'HEAD' : 'GET'
+      }
+    }
 
     const { fetch, Request } = this.options.fetch
 

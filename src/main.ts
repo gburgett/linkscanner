@@ -63,6 +63,10 @@ const argv = yargs
     description: 'Do not test links that point to other hosts',
     alias: 'e',
   })
+  .option('XGET', {
+    boolean: true,
+    description: 'Always use a GET request when normally would use a HEAD',
+  })
   .option('user-agent', {
     description: 'A user-agent string to be used when sending requests',
     type: 'string',
@@ -100,6 +104,7 @@ const options = assign({},
   argv && ({
     progress: runDefaults.progress && !argv.debug,
     logger: argv.debug ? debugLogger : defaultLogger,
+    forceGet: argv.XGET,
   }),
   argv)
 

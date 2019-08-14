@@ -269,7 +269,7 @@ Allow: *`)
     expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage')
   })
 
-  it('does not simple recurse when recursive: 0', async () => {
+  it('does not simple recurse when recursive: 0 and forceGet', async () => {
     fetchMockSandbox.get('http://test.com/testpage',
       {
         status: 200,
@@ -284,6 +284,37 @@ Allow: *`)
     const uut = BuildPipeline(source, {
       ...options,
       recursive: 0,
+      forceGet: true
+    })
+
+    const urls = [] as any[]
+    uut.on('url', (u) => urls.push(u))
+
+    // act
+    const result: Result[] = await collect(uut)
+
+    expect(result.length).to.equal(1)
+    expect((result[0] as SuccessResult).status).to.eq(200)
+    expect(result[0].url.toString()).to.eq('http://test.com/testpage')
+
+    expect(urls[0].url.toString()).to.equal('http://test.com/testpage')
+    expect(urls.length).to.eq(1)
+  })
+
+  it('HEADs a source URL when recursive: 0', async () => {
+    fetchMockSandbox.head('http://test.com/testpage',
+      {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset: utf-8',
+        },
+      })
+
+    const source = toReadable(['http://test.com/testpage'])
+
+    const uut = BuildPipeline(source, {
+      ...options,
+      recursive: 0
     })
 
     const urls = [] as any[]
