@@ -1,3 +1,4 @@
+import { throttle } from 'async-toolbox'
 import { Writable } from 'stream'
 
 import chalk, { Chalk } from 'chalk'
@@ -20,7 +21,8 @@ interface ProgressBarState {
   pauses: Array<{ start: number, end: number }>
   checked: Set<string>
   all: Set<string>
-  latest?: string
+  inProgress: Array<{ url: string, start: number }>
+  latest?: { url: string, start: number, end?: number, status?: number | string }
   isRendered: boolean
   start?: number
 }
@@ -32,6 +34,7 @@ export class ProgressBar extends Writable implements Logger {
   private readonly state: ProgressBarState = {
     checked: new Set<string>(),
     all: new Set<string>(),
+    inProgress: [],
     isRendered: false,
     currentPause: undefined,
     pauses: [],
@@ -55,17 +58,20 @@ export class ProgressBar extends Writable implements Logger {
     this.on('pipe', (resultsStream) => {
       resultsStream.on('url', this._onUrl)
       resultsStream.on('fetch', this._onFetch)
+      resultsStream.on('fetchError', this._onFetchError)
       resultsStream.on('response', this._onResponse)
       resultsStream.on('suspend', this._onPause)
       resultsStream.on('unsuspend', this._onResume)
       this.state.start = isomorphicPerformance.now()
     })
+
+    this.render = throttle(this.render.bind(this), 100)
   }
 
   public _write = (chunk: Result, encoding: string, cb: () => void) => {
-    this.state.all.add(chunk.url.toString())
-    this.state.checked.add(chunk.url.toString())
-    this.render()
+    if (chunk.type != 'skip') {
+      this._onResult(chunk)
+    }
     cb()
   }
 
@@ -74,7 +80,7 @@ export class ProgressBar extends Writable implements Logger {
     cb()
   }
 
-  public render = async () => {
+  public async render() {
     const {checked, all, latest, currentPause} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
@@ -110,9 +116,24 @@ export class ProgressBar extends Writable implements Logger {
 
     topLineParts.splice(1, 0, bar)
 
-    const latestLine = currentPause === undefined ?
-      (latest || '') :
+    let latestLine = currentPause != undefined &&
       `paused ${((isomorphicPerformance.now() - currentPause) / 1000).toFixed(0).padStart(4)}s`
+    if (!latestLine) {
+      if (latest) {
+        const end = latest.end || isomorphicPerformance.now()
+        latestLine = `${((end - latest.start) / 1000).toFixed(1).padStart(3)}s` +
+          ` ${(latest.status || '   ')} ${latest.url}`
+
+        if (this.state.inProgress.length > 0) {
+          // next render show the in-progress
+          this.state.latest = undefined
+        }
+      } else if (this.state.inProgress.length > 0) {
+        const ip = this.state.inProgress[0]
+        latestLine = `${((isomorphicPerformance.now() - ip.start) / 1000).toFixed(1).padStart(3)}s` +
+          `     ${ip.url}`
+      }
+    }
 
     const msg = topLineParts.join('')
     // log a cleared blank line
@@ -120,7 +141,7 @@ export class ProgressBar extends Writable implements Logger {
     // clear the current line before writing the msg
     logger.error('\x1b[2K' + msg)
     // write the latest hit line
-    logger.error('\x1b[2K' + chalk.dim.cyan((latestLine).substr(0, width)) +
+    logger.error('\x1b[2K' + chalk.dim.cyan((latestLine || '').substr(0, width)) +
       // go up three lines after
       '\x1b[F\x1b[F\x1b[F')
 
@@ -165,12 +186,52 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   private _onFetch = (req: Request) => {
-    this.state.latest = `    ${req.url}`
+    this.state.inProgress.push({
+      url: req.url,
+      start: isomorphicPerformance.now(),
+    })
+    this.render()
+  }
+
+  private _onFetchError = (req: { url: string }) => {
+    const idx = this.state.inProgress.findIndex((ip) => req.url == ip.url)
+    if (idx < 0) {
+      return
+    }
+    const [inProgress] = this.state.inProgress.splice(idx, 1)
+
+    this.state.latest = {
+      ...inProgress,
+      url: req.url,
+      status: 'err',
+      end: isomorphicPerformance.now(),
+    }
     this.render()
   }
 
   private _onResponse = (resp: Response, req: Request) => {
-    this.state.latest = `${resp.status} ${resp.url || req.url}`
+    const idx = this.state.inProgress.findIndex((ip) => req.url == ip.url)
+    if (idx < 0) {
+      return
+    }
+    const [inProgress] = this.state.inProgress.splice(idx, 1)
+
+    this.state.latest = {
+      ...inProgress,
+      url: resp.url || req.url,
+      status: resp.status,
+      end: isomorphicPerformance.now(),
+    }
+    this.render()
+  }
+
+  private _onResult = (chunk: Result) => {
+    if (chunk.type == 'error') {
+      this._onFetchError({ url: chunk.url.toString() })
+    }
+
+    this.state.all.add(chunk.url.toString())
+    this.state.checked.add(chunk.url.toString())
     this.render()
   }
 

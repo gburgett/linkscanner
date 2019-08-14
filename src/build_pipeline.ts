@@ -108,7 +108,7 @@ export function BuildPipeline(
   const results = new PassThrough({ objectMode: true })
 
   new EventForwarder({
-    only: ['fetch', 'response', 'EOS'],
+    only: ['fetch', 'fetchError', 'response', 'EOS'],
   })
     .from(fetcher)
     .from(reentry)
