@@ -105,6 +105,9 @@ Allow: *`)
       recursive: true,
     })
 
+    const urls = [] as any[]
+    uut.on('url', (u) => urls.push(u))
+
     // act
     const result: Result[] = await collect(uut)
 
@@ -118,6 +121,11 @@ Allow: *`)
     expect(result[2].host).to.eq('other.com')
     expect(result[2].url.toString()).to.eq('http://other.com/')
     expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage/relative/link')
+
+    expect(urls[0].url.toString()).to.equal('http://test.com/testpage/')
+    expect(urls[1].url.toString()).to.equal('http://test.com/testpage/relative/link')
+    expect(urls[2].url.toString()).to.equal('http://other.com/')
+    expect(urls.length).to.eq(3)
   })
 
   it('does not deep recurse when recursive: false', async () => {
@@ -278,12 +286,18 @@ Allow: *`)
       recursive: 0,
     })
 
+    const urls = [] as any[]
+    uut.on('url', (u) => urls.push(u))
+
     // act
     const result: Result[] = await collect(uut)
 
     expect(result.length).to.equal(1)
     expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].url.toString()).to.eq('http://test.com/testpage')
+
+    expect(urls[0].url.toString()).to.equal('http://test.com/testpage')
+    expect(urls.length).to.eq(1)
   })
 
   it('skips disallowed URLs', async () => {

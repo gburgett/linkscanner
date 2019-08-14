@@ -95,7 +95,7 @@ export function BuildPipeline(
   const results = new PassThrough({ objectMode: true })
 
   new EventForwarder({
-    only: ['url', 'fetch', 'response', 'EOS'],
+    only: ['fetch', 'response', 'EOS'],
   })
     .from(fetcher)
     .from(reentry)
@@ -195,6 +195,8 @@ export function BuildPipeline(
         logger.debug('leaf', url.toString())
       }
 
+      // forward this URL cause we're going to check it.
+      results.emit('url', { url })
       reentry.write({ url, parent, leaf: isLeafNode })
     } catch (ex) {
       logger.error(ex)
