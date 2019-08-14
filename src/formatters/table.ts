@@ -49,11 +49,13 @@ export class TableFormatter extends Writable {
       result.status && result.status.toFixed(0),
       result.method && result.method.padEnd(4),
       result.url.toString().padEnd(80),
-      'contentType' in result && result.contentType && result.contentType.toString().padEnd('application/json'.length),
+      'contentType' in result && result.contentType && result.contentType.padEnd('application/json'.length),
       'ms' in result && result.ms.toFixed(0).padStart(4),
       result.parent && result.parent.url.toString(),
       'error' in result && result.error.toString(),
     ].map((l) => l || '')
+
+    line = line.map((l, i) => l.padEnd(header[i].length))
 
     if (verbose) {
       if (!this.wroteHeader) {
@@ -65,7 +67,6 @@ export class TableFormatter extends Writable {
         this.wroteHeader = true
       }
 
-      line = line.map((l, i) => l.padEnd(header[i].length))
       logger.log('| ' + line.join(' | ') + ' |')
 
     } else {

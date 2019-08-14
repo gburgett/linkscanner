@@ -15,21 +15,65 @@ describe('TableFormatter', () => {
     const instance = new TableFormatter({
       logger: logger as unknown as Logger,
     })
-
-    // act
-    instance.write({
+    const result: SuccessResult = {
+      type: 'success',
       status: 200,
       method: 'GET',
       url: parseUrl('http://test.com/#'),
       contentType: 'text/html',
       host: 'test.com',
       ms: 123,
-    } as Result)
+      links: [],
+    }
+
+    // act
+    instance.write(result)
     await instance.endAsync()
 
     // assert
     expect(messages.length).to.eq(1)
-    expect(messages[0]).to.deep.eq(`200\tGET \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t\t`)
+    // tslint:disable-next-line: max-line-length
+    expect(messages[0]).to.deep.eq(`200   \tGET   \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t                                                                                \t     `)
+  })
+
+  it('pads appropriately for error results', async () => {
+    const messages: string[] = []
+    const logger = { log: (msg: string) => messages.push(msg) }
+
+    const instance = new TableFormatter({
+      logger: logger as unknown as Logger,
+    })
+
+    const r0: SuccessResult = {
+      type: 'success',
+      status: 200,
+      method: 'GET',
+      url: parseUrl('http://test.com/#'),
+      contentType: 'text/html',
+      host: 'test.com',
+      ms: 123,
+      links: [],
+    }
+    const result: ErrorResult = {
+      type: 'error',
+      error: new Error('test'),
+      reason: 'error',
+      status: undefined,
+      method: 'GET',
+      url: parseUrl('http://test.com/2'),
+      parent: r0,
+      host: 'test.com',
+      leaf: true,
+    }
+
+    // act
+    instance.write(result)
+    await instance.endAsync()
+
+    // assert
+    expect(messages.length).to.eq(1)
+    expect(messages[0]).to.deep.eq(`      \tGET   \t${'http://test.com/2'.padEnd(80)}\t                \t    ` +
+      `\thttp://test.com/#                                                               \tError: test`)
   })
 
   it('logs verbose output to the console', async () => {
