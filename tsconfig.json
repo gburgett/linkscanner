@@ -10,6 +10,7 @@
     // Import non-ES modules as default imports.
     "esModuleInterop": true,
     "outDir": "dist",
+    "declaration": true,
     "noImplicitAny": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
