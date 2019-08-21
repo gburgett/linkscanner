@@ -1,10 +1,10 @@
 {
   "name": "linkscanner",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A CLI and node library to scan a source URL and recursively check URLs",
   "repository": {
-    "type" : "git",
-    "url" : "github:gburgett/linkscanner"
+    "type": "git",
+    "url": "github:gburgett/linkscanner"
   },
   "main": "dist/index.js",
   "bin": {
