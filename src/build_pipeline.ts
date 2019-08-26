@@ -29,6 +29,7 @@ export interface BuildPipelineOptions {
 
   logger: Logger
   fetch?: FetchInterface
+  parsers: Parsers
 }
 
 /**
@@ -43,14 +44,20 @@ export function BuildPipeline(
     hostnames,
     logger,
     ...options
-  } = assign({
-    'hostnames': new Set<string>(),
-    'logger': defaultLogger,
-    'followRedirects': false,
-    'recursive': false,
-    'exclude-external': false,
-    'parsers': defaultParsers(args),
-  }, args)
+  } = assign(
+    {
+      'hostnames': new Set<string>(),
+      'logger': defaultLogger,
+      'followRedirects': false,
+      'recursive': false,
+      'exclude-external': false,
+      'parsers': {},
+    },
+    args,
+    {
+      parsers: assign({}, defaultParsers(args), args && args.parsers),
+    },
+  )
 
   const recursionLimit: number =
     options.recursive === false ? 1 :

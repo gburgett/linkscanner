@@ -11,6 +11,7 @@ import { ConsoleFormatter, ConsoleFormatterOptions } from './formatters/console'
 import { TableFormatter, TableFormatterOptions } from './formatters/table'
 import { debugLogger, defaultLogger, Logger } from './logger'
 import { Result } from './model'
+import { Parsers } from './parsers'
 import { ProgressBar, ProgressBarOptions } from './progress_bar'
 import { loadSource } from './source'
 import { assign, Options } from './util'
@@ -49,6 +50,8 @@ interface LinkscannerOptions {
   headers: string[]
   userAgent?: string
 
+  parsers: Parsers
+
   logger: Logger
 }
 
@@ -74,6 +77,7 @@ const linkscannerDefaults: Readonly<LinkscannerOptions> = {
     'text',
     'default',
   ],
+  parsers: {},
   logger: defaultLogger,
 }
 

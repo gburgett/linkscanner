@@ -18,7 +18,7 @@ interface HostnameSetOptions {
   forceGet: boolean
   userAgent?: string
   logger: Logger
-  parsers?: Parsers
+  parsers: Parsers
   fetch: FetchInterface
   maxConcurrency: number | { tokens: number, interval: Interval }
 }
@@ -40,6 +40,7 @@ export class HostnameSet {
       logger: defaultLogger,
       fetch: crossFetch,
       maxConcurrency: 1,
+      parsers: {}
     },
       options)
   }

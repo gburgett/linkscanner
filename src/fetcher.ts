@@ -36,7 +36,6 @@ export class Fetcher extends ParallelTransform {
         followRedirects: false,
         forceGet: false,
         timeout: 30000,
-        parsers: defaultParsers(options),
         acceptMimeTypes: ['text/html', 'application/json'],
         // default to the global fetch
         fetch: defaultFetchInterface,
@@ -44,8 +43,10 @@ export class Fetcher extends ParallelTransform {
       options,
       {
         objectMode: true,
+        parsers: assign({}, defaultParsers(options), options.parsers),
       },
     )
+
     super(opts)
     this.options = opts
   }
