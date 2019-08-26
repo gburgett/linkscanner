@@ -6,7 +6,7 @@ import { } from 'mocha'
 
 import { FetchInterfaceWrapper } from './fetch_interface'
 import { Fetcher, FetchOptions } from './fetcher'
-import { ErrorResult, Result, SuccessResult } from './model'
+import { Chunk, ErrorResult, Result, SuccessResult } from './model'
 import { parseUrl } from './url'
 
 // tslint:disable:no-unused-expression
@@ -226,5 +226,56 @@ describe('Fetcher', () => {
     expect((result[0] as SuccessResult).status).to.eq(200)
     expect(result[0].host).to.eq('other.com')
     expect(result[0].url.toString()).to.eq('http://other.com/some-video')
+  })
+
+  it('sets referrer header', async () => {
+    const uut = instance({ forceGet: true })
+
+    fetchMockSandbox.getOnce('http://other.com', 200)
+
+    // act
+    await uut.writeAsync({
+      url: parseUrl('http://other.com'),
+      parent: {
+        url: parseUrl('http://parent-url.com'),
+        host: 'parent-url.com',
+        method: 'GET',
+      },
+    } as Chunk)
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    expect((result[0] as SuccessResult).status).to.eq(200)
+    expect((result[0] as SuccessResult).method).to.eq('GET')
+
+    const call = fetchMockSandbox.lastCall(/other\.com/)!
+    const headers = call[1]!.headers as any
+    expect(headers.Referer).to.deep.eq(['http://parent-url.com/'])
+  })
+
+  it('does not set referrer when downgrading from HTTPS', async () => {
+    const uut = instance({ forceGet: true })
+
+    fetchMockSandbox.getOnce('http://other.com', 200)
+
+    // act
+    await uut.writeAsync({
+      url: parseUrl('http://other.com'),
+      parent: {
+        url: parseUrl('https://parent-https-url.com'),
+        host: 'parent-url.com',
+        method: 'GET',
+      },
+    } as Chunk)
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    expect((result[0] as SuccessResult).status).to.eq(200)
+    expect((result[0] as SuccessResult).method).to.eq('GET')
+
+    const call = fetchMockSandbox.lastCall(/other\.com/)!
+    const headers = call[1]!.headers as any
+    expect(headers.Referer).to.be.undefined
+
   })
 })

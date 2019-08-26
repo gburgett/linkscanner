@@ -96,13 +96,8 @@ export class Fetcher extends ParallelTransform {
       return
     }
 
-    const request = new Request(url.toString(), {
-      method,
-      headers: {
-        Accept: this.options.acceptMimeTypes.join(', '),
-      },
-      redirect: 'manual',
-    })
+    const request = new Request(url.toString(),
+      this.requestInit(chunk, partialResult))
 
     logger.debug(`${request.method} ${request.url}`)
     const start = isomorphicPerformance.now()
@@ -206,5 +201,33 @@ export class Fetcher extends ParallelTransform {
     } else {
       this.push(fullResult)
     }
+  }
+
+  private requestInit({parent}: Chunk, {method, url}: { method: string, url: URL }): RequestInit {
+    const headers: { [key: string]: string } = {
+      Accept: this.options.acceptMimeTypes.join(', '),
+    }
+
+    const init: RequestInit = {
+      method,
+      headers,
+      redirect: 'manual',
+    }
+    if (parent) {
+      if (parent.url.protocol == 'https:' && url.protocol == 'http:') {
+        /*
+         * A Referer header is not sent by browsers if:
+         *
+         * The referring resource is a local "file" or "data" URI.
+         * An unsecured HTTP request is used and the referring page was received
+         * with a secure protocol (HTTPS).
+         * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referer
+         */
+      } else {
+        headers.Referer = parent.url.toString()
+      }
+    }
+
+    return init
   }
 }
