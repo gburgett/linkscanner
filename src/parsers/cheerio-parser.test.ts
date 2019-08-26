@@ -187,6 +187,26 @@ describe('CheerioParser', () => {
     expect(results[5].toString()).to.eq('https://google.com/post-me')
     expect(results[6].toString()).to.eq('http://some-iframe.test.com/')
   })
+
+  it('scans data-href attributes too', async () => {
+    const parser = new CheerioParser({
+      include: ['[data-href]'],
+    })
+
+    const req = new Request('https://google.com')
+    const resp = new Response(`
+      <html>
+        <body>
+          <div data-href="http://test.com"
+        </body>
+      </html>
+      `)
+    const results: URL[] = []
+    await parser.parse(resp, req, (result) => results.push(result))
+
+    expect(results.length).to.eq(1)
+    expect(results[0].toString()).to.eq('http://test.com/')
+  })
 })
 
 // tslint:disable:max-line-length

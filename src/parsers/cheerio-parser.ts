@@ -49,9 +49,15 @@ export class CheerioParser {
       baseUrl = parseUrl(baseElement.attr('href'), response.url || request.url).toString()
     }
 
+    const unique = new Set<string>()
     this._options.include.forEach((selector) => {
       $(selector).each((index, anchorTag) => {
         parseAttr(anchorTag, 'href', 'src', 'action')
+
+        const attrSelector = selector.match(/\[(.+)\]/)
+        if (attrSelector) {
+          parseAttr(anchorTag, attrSelector[1])
+        }
       })
     })
 
@@ -60,27 +66,30 @@ export class CheerioParser {
         throw new Error(`no attrs given to select`)
       }
 
-      let foundOne = false
       const $elem = $(element)
       attrs.forEach((attr) => {
-        const href = $elem.attr(attr)
+        const href = attr.startsWith('data-') ?
+          $elem.data(attr.substr(5)) :
+          $elem.attr(attr)
         if (href) {
+          let url: URL | undefined
           try {
-            const url = parseUrl(href, baseUrl)
-            if (['http:', 'https:'].includes(url.protocol)) {
-              push(url)
-              foundOne = true
-            }
+            url = parseUrl(href, baseUrl)
           } catch (ex) {
             // ignore
             logger.debug(`bad href: '${href}' (${$elem.toString()})`)
           }
+          if (!url) {
+            return
+          }
+
+          const urlString = url.toString()
+          if (['http:', 'https:'].includes(url.protocol) && !unique.has(urlString)) {
+            unique.add(urlString)
+            push(url)
+          }
         }
       })
-
-      if (!foundOne) {
-        logger.debug(`no valid link elements found on attribute ${$elem.toString()}`)
-      }
     }
   }
 }
