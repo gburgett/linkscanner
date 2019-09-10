@@ -22,7 +22,7 @@ export function isSuccessResult(result: Result): result is SuccessResult {
   return result.type == 'success'
 }
 
-const errorReasons = ['error', 'timeout', 'unknown'] as const
+const errorReasons = ['error', 'timeout', 'redirect-loop', 'unknown'] as const
 export type ErrorReason = typeof errorReasons[number]
 
 export interface ErrorResult extends ResultCommon {

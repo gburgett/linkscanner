@@ -200,6 +200,42 @@ describe('Fetcher', () => {
     expect(r0.url.toString()).to.eq('http://other.com/')
   })
 
+  it('detects an infinite redirect', async () => {
+    const uut = instance({
+      followRedirects: true,
+    })
+
+    fetchMockSandbox.headOnce('http://other.com/1', {
+      status:  302,
+      headers: {
+        Location: 'http://other.com/2',
+      },
+    })
+
+    fetchMockSandbox.headOnce('http://other.com/2', {
+      status:  301,
+      headers: {
+        Location: 'http://other.com/1',
+      },
+    })
+
+    // act
+    await uut.writeAsync({ url: parseUrl('http://other.com/1'), leaf: true })
+    await uut.endAsync()
+    const result: Result[] = await collect(uut)
+
+    expect((result[0] as ErrorResult).error).to.be.undefined
+    expect((result[0] as SuccessResult).status).to.eq(302)
+    expect(result[0].host).to.eq('other.com')
+    expect(result[0].url.toString()).to.eq('http://other.com/1')
+    expect(result[0].leaf).to.be.false
+
+    expect((result[1] as ErrorResult).reason).to.eq('redirect-loop')
+    expect(result[1].host).to.eq('other.com')
+    expect(result[1].url.toString()).to.eq('http://other.com/2')
+    expect(result[1].parent).to.eq(result[0])
+  })
+
   it('does not attempt to scan a media item', async () => {
     const uut = instance()
 

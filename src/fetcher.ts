@@ -153,14 +153,12 @@ export class Fetcher extends ParallelTransform {
     })
 
     if (followRedirects && [301, 302, 307].includes(response.status)) {
-      // push the redirect
       fullResult.leaf = false
-      this.push(fullResult)
 
       // single redirect
       const location = response.headers.get('Location')
       if (location) {
-        let parsedLocation
+        let parsedLocation: URL
         try {
           parsedLocation = parseUrl(location)
         } catch (ex) {
@@ -174,6 +172,21 @@ export class Fetcher extends ParallelTransform {
           this.push(error)
           return
         }
+
+        if (infiniteRedirect(parsedLocation, parent)) {
+          const error: ErrorResult = {
+            ...fullResult,
+            type: 'error',
+            leaf: true,
+            reason: 'redirect-loop',
+            error: new Error(`${parsedLocation}: infinite redirect`),
+          }
+          this.push(error)
+          return
+        }
+
+        // push the redirect only if we've passed all the error conditions
+        this.push(fullResult)
 
         // Try again, using the redirect result as the parent
         await this._fetch({
@@ -230,4 +243,27 @@ export class Fetcher extends ParallelTransform {
 
     return init
   }
+}
+
+function infiniteRedirect(location: URL, parent: SuccessResult | undefined): boolean {
+  const parents: string[] = []
+  while (parent) {
+    if (![301, 302, 307].includes(parent.status)) {
+      // no infinite redirect if parent is not a redirect
+      return false
+    }
+    parents.push(parent.url.toString())
+    console.log('check', location.toString(), 'against', parents)
+
+    // does the given location point to one of the parents?
+    if (parents.includes(location.toString())) {
+      console.log('found infinite redirect')
+      return true
+    }
+
+    // look up the tree
+    parent = parent.parent
+  }
+
+  return false
 }
