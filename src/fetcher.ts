@@ -253,11 +253,9 @@ function infiniteRedirect(location: URL, parent: SuccessResult | undefined): boo
       return false
     }
     parents.push(parent.url.toString())
-    console.log('check', location.toString(), 'against', parents)
 
     // does the given location point to one of the parents?
     if (parents.includes(location.toString())) {
-      console.log('found infinite redirect')
       return true
     }
 
