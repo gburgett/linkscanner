@@ -81,6 +81,43 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   public async render() {
+    this._render()
+  }
+
+  public clear() {
+    if (!this.state.isRendered) {
+      return
+    }
+
+    const { logger } = this._options
+    logger.error('\x1b[2K\n\x1b[2K\n\x1b[2K\x1b[F\x1b[F\x1b[F')
+  }
+
+  public log(message?: any, ...optionalParams: any[]): void {
+    this.clear()
+    this._options.logger.log(message, ...optionalParams)
+    this._render()
+  }
+
+  public debug(message?: any, ...optionalParams: any[]): void {
+    if (this._options.debug) {
+      this.clear()
+    }
+
+    this._options.logger.debug(message, ...optionalParams)
+
+    if (this._options.debug) {
+      this._render()
+    }
+  }
+
+  public error(message?: any, ...optionalParams: any[]): void {
+    this.clear()
+    this._options.logger.error('\x1b[2K' + message, ...optionalParams)
+    this._render()
+  }
+
+  private _render = async () => {
     const {checked, all, latest, currentPause} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
@@ -148,38 +185,6 @@ export class ProgressBar extends Writable implements Logger {
     this.state.isRendered = true
   }
 
-  public clear() {
-    if (!this.state.isRendered) {
-      return
-    }
-
-    const { logger } = this._options
-    logger.error('\x1b[2K\n\x1b[2K\n\x1b[2K\x1b[F\x1b[F\x1b[F')
-  }
-
-  public log(message?: any, ...optionalParams: any[]): void {
-    this.clear()
-    this._options.logger.log(message, ...optionalParams)
-    this.render()
-  }
-
-  public debug(message?: any, ...optionalParams: any[]): void {
-    if (this._options.debug) {
-      this.clear()
-    }
-
-    this._options.logger.debug(message, ...optionalParams)
-
-    if (this._options.debug) {
-      this.render()
-    }
-  }
-
-  public error(message?: any, ...optionalParams: any[]): void {
-    this._options.logger.error('\x1b[2K' + message, ...optionalParams)
-    this.render()
-  }
-
   private _onUrl = ({ url }: { url: URL }) => {
     this.state.all.add(url.toString())
     this.render()
@@ -228,6 +233,12 @@ export class ProgressBar extends Writable implements Logger {
   private _onResult = (chunk: Result) => {
     if (chunk.type == 'error') {
       this._onFetchError({ url: chunk.url.toString() })
+    }
+
+    if (chunk.parent && [301, 302, 307].includes(chunk.parent.status)) {
+      // redirects only count as one. Since the parent already came through we
+      // don't need to check this.
+      return
     }
 
     this.state.all.add(chunk.url.toString())
