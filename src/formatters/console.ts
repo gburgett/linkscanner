@@ -67,6 +67,18 @@ export class ConsoleFormatter extends Writable {
       }
     }
 
+    let hasErrors = false
+    for (const result of this.results.values()) {
+      if (isErrorResult(result) ||
+          isSuccessResult(result) && result.status >= 400) {
+        if (!hasErrors) {
+          hasErrors = true
+          this.options.logger.log(`The following URLs are broken:\n${'-'.repeat(30)}`)
+        }
+        this._writeErrorSummary(result)
+      }
+    }
+
     cb()
   }
 
@@ -184,6 +196,30 @@ export class ConsoleFormatter extends Writable {
     ))
 
     logger.log(lines.filter(present).join('\n') + '\n')
+  }
+
+  private _writeErrorSummary(r: SuccessResult | ErrorResult) {
+    const line0 = colorize(
+      `${r.status ? r.status.toFixed(0).padEnd(3) : 'ERR'} ${r.method && r.method.padEnd(4)} ${r.url.toString()}`,
+      r.status,
+    )
+
+    const parent = findNonRedirectParent(r.parent)
+    const line1 = parent && chalk.gray(`  found on ${parent.url}`)
+
+    const { logger, verbose } = this.options
+    logger.log(line0 + '\n' + line1)
+  }
+}
+
+function findNonRedirectParent(parent: SuccessResult | undefined): SuccessResult | undefined {
+  while (parent) {
+    if (![301, 302, 307].includes(parent.status)) {
+      return parent
+    }
+
+    // look up the tree
+    parent = parent.parent
   }
 }
 
