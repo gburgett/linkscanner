@@ -154,9 +154,10 @@ export class ConsoleFormatter extends Writable {
      *    found on https://www.google.com
      *    X links found, Y not checked. Z broken.
      */
+    const statusText = (result.status ? result.status.toFixed(0) : '').padEnd(3)
     const lines = [
       colorize(
-        `${result.status.toFixed(0).padEnd(3)} ${result.method.padEnd(4)} ${result.url.toString()}`,
+        `${statusText} ${result.method.padEnd(4)} ${result.url.toString()}`,
         result.status,
       ),
       result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
