@@ -24,6 +24,11 @@ const argv = yargs
     description: 'Print more information in the output results (formatter dependent)',
     alias: 'v',
   })
+  .option('compact', {
+    boolean: true,
+    description: 'Print less information in the output results (formatter dependent)',
+    alias: 'c',
+  })
   .option('--no-progress', {
     boolean: true,
     description: 'Do not display a progress bar',
@@ -81,7 +86,7 @@ const argv = yargs
     array: true,
   })
   .option('formatter', {
-    alias: 'f',
+    alias: ['f', 'format'],
     description: 'Choose the output formatter',
     choices: ['table', 'console'] as const,
   })

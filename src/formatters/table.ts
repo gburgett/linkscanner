@@ -1,27 +1,30 @@
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { isSkippedResult, Result } from '../model'
+import { isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
 import { assign, Options, present } from '../util'
 
 export interface TableFormatterOptions {
   logger: Logger
   verbose?: boolean
+  compact?: boolean
 }
 
-const header = [
-  'status',
-  'method',
-  'url'.padEnd(80),
-  'contentType'.padEnd('application/json'.length),
-  'ms'.padStart(4),
-  'parent'.padEnd(80),
-  'error',
-]
+const header = {
+  status: 'status',
+  method: 'method',
+  url: 'url'.padEnd(80),
+  contentType: 'contentType'.padEnd('application/json'.length),
+  ms: 'ms'.padStart(4),
+  parent: 'parent'.padEnd(80),
+  error: 'error',
+}
 
 export class TableFormatter extends Writable {
   private readonly options: TableFormatterOptions
   private wroteHeader = false
+
+  private readonly columns: Array<keyof typeof header>
 
   constructor(options?: Options<TableFormatterOptions>) {
     super({
@@ -32,6 +35,12 @@ export class TableFormatter extends Writable {
       { logger: defaultLogger },
       options,
     )
+
+    if (this.options.compact) {
+      this.columns = ['status', 'method', 'url', 'parent', 'error']
+    } else {
+      this.columns = ['status', 'method', 'url', 'contentType', 'ms', 'parent', 'error']
+    }
   }
 
   public _write(result: Result, encoding: any, cb: (error?: Error | null) => void) {
@@ -40,37 +49,70 @@ export class TableFormatter extends Writable {
   }
 
   private _format(result: Result) {
-    const { logger, verbose } = this.options
+    const { logger, verbose, compact } = this.options
     if (isSkippedResult(result)) {
       return
     }
 
-    let line = [
-      result.status && result.status.toFixed(0),
-      result.method && result.method.padEnd(4),
-      result.url.toString().padEnd(80),
-      'contentType' in result && result.contentType && result.contentType.padEnd('application/json'.length),
-      'ms' in result && result.ms.toFixed(0).padStart(4),
-      result.parent && result.parent.url.toString(),
-      'error' in result && result.error.toString(),
-    ].map((l) => l || '')
+    if (!verbose) {
+      if (isSuccessResult(result)) {
+        if ([301, 302, 307].includes(result.status)) {
+            // don't log redirects unless verbose
+          return
+        }
 
-    line = line.map((l, i) => l.padEnd(header[i].length))
+        // "compact" the chain of redirects back up to the parent URL
+        result = mergeRedirectParents(result)
+      }
+    }
 
-    if (verbose) {
+    const line = {
+      status: result.status && result.status.toFixed(0),
+      method: result.method && result.method,
+      url: result.url.toString(),
+      contentType: 'contentType' in result && result.contentType && result.contentType,
+      ms: 'ms' in result && result.ms && result.ms.toFixed(0).padStart(4),
+      parent: result.parent && result.parent.url.toString(),
+      error: 'error' in result && result.error.toString(),
+    }
+
+    let formattedLine = this.columns.map((c) => (line[c] || '').padEnd(header[c].length))
+    if (compact) {
+      formattedLine = formattedLine.map((col) => col.trim())
+    } else {
       if (!this.wroteHeader) {
-        logger.log('| ' + header.join(' | ') + ' |')
-        const dividerLine = header.map((h) => h.length).reduce((str, length) => {
-          return str + ' ' + '-'.repeat(length) + ' |'
-        }, '|')
-        logger.log(dividerLine)
+        const formattedHeader = this.columns.map((c) => header[c])
+        logger.log(formattedHeader.join('\t'))
         this.wroteHeader = true
       }
-
-      logger.log('| ' + line.join(' | ') + ' |')
-
-    } else {
-      logger.log(line.join('\t'))
     }
+
+    logger.log(formattedLine.join('\t'))
   }
+}
+
+/**
+ * Merges several redirect objects into one result representing all the redirects
+ * that it took to get to the final result.
+ */
+function mergeRedirectParents(child: SuccessResult): SuccessResult {
+  let parent = child.parent
+  while (parent) {
+    if (![301, 302, 307].includes(parent.status)) {
+      return child
+    }
+
+    // "merge" redirect results into the child result
+    child = {
+      // keep the final status, contentType, etc
+      ...child,
+      // sum the total ms
+      ms: child.ms + parent.ms,
+      // use the redirect's URL, cause that's the one found on page
+      url: parent.url,
+      parent: parent.parent,
+    }
+    parent = parent.parent
+  }
+  return child
 }

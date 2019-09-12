@@ -1,10 +1,8 @@
 import {} from 'async-toolbox/events'
-import { collect } from 'async-toolbox/stream'
 import { expect } from 'chai'
 import {} from 'mocha'
 
-import { Logger } from '../logger'
-import { Result, SkippedResult, SuccessResult } from '../model'
+import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
 import { ConsoleFormatter } from './console'
 
@@ -50,6 +48,59 @@ describe('ConsoleFormatter', () => {
     expect(messages[0]).to.not.include('0 broken')
   })
 
+  it('logs error summary at end', async () => {
+    const messages: string[] = []
+    const instance = new ConsoleFormatter({
+      logger: {
+        ...console,
+        log: (msg: string) => messages.push(msg),
+      } as any,
+    })
+
+    const notFoundResult: SuccessResult = {
+      type: 'success',
+      method: 'GET',
+      url: parseUrl('http://www.test.com/notfound'),
+      host: 'www.test.com',
+      status: 404,
+      ms: 123,
+      links: [parseUrl('http://www.test.com/asdf')],
+      contentType: '',
+    }
+    instance.write(notFoundResult)
+
+    const errorResult: ErrorResult = {
+      url: parseUrl('http://www.test.com/asdf'),
+      type: 'error',
+      reason: 'error',
+      status: undefined,
+      leaf: true,
+      host: 'www.test.com',
+      error: new Error('test'),
+      method: 'GET',
+      parent: {
+        url: parseUrl('http://www.test.com/good'),
+        links: [parseUrl('http://www.test.com/asdf')],
+        host: 'www.test.com',
+        contentType: 'text/html',
+        method: 'GET',
+        ms: 123,
+        status: 200,
+        type: 'success',
+      },
+    }
+    instance.write(errorResult)
+    instance.end()
+
+    await instance.onceAsync('finish')
+
+    expect(messages.length).to.eq(5)
+    expect(messages[2]).to.include('The following URLs are broken')
+    expect(messages[3]).to.include('http://www.test.com/notfound')
+    expect(messages[4]).to.include('http://www.test.com/asdf')
+    expect(messages[4]).to.include('found on http://www.test.com/good')
+  })
+
   it('does not log leaf nodes', async () => {
     const messages: string[] = []
     const instance = new ConsoleFormatter({
@@ -88,7 +139,7 @@ describe('ConsoleFormatter', () => {
 
     await instance.onceAsync('finish')
 
-    expect(messages.length).to.eq(1)
+    expect(messages.length).to.eq(3)
     expect(messages[0]).to.include('200')
     expect(messages[0]).to.include('GET')
     expect(messages[0]).to.include('http://www.test.com')
@@ -146,7 +197,7 @@ describe('ConsoleFormatter', () => {
 
     await instance.onceAsync('finish')
 
-    expect(messages.length).to.eq(2)
+    expect(messages.length).to.eq(4)
     expect(messages[1]).to.include('201')
     expect(messages[1]).to.include('GET')
     expect(messages[1]).to.include('http://www.test2.com')

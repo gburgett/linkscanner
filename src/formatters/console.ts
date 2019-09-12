@@ -16,6 +16,7 @@ import { assign, Options, present } from '../util'
 export interface ConsoleFormatterOptions {
   logger: Logger
   verbose?: boolean
+  compact?: boolean
 }
 
 export class ConsoleFormatter extends Writable {
@@ -110,7 +111,7 @@ export class ConsoleFormatter extends Writable {
   }
 
   private _flush(result: Result, childResults: Result[]) {
-    const { logger, verbose } = this.options
+    const { logger, verbose, compact } = this.options
 
     logger.debug('flush', result.url.toString())
     this.flushed.add(result.url.toString())
@@ -167,26 +168,31 @@ export class ConsoleFormatter extends Writable {
      *    X links found, Y not checked. Z broken.
      */
     const statusText = (result.status ? result.status.toFixed(0) : '').padEnd(3)
-    const lines = [
+    const lines: Array<string | undefined | false> = [
       colorize(
         `${statusText} ${result.method.padEnd(4)} ${result.url.toString()}`,
         result.status,
       ),
-      result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
-      linkCount > 0 &&
-        chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedResults.length.toFixed(0)} not checked. `) +
-          (brokenResults.length == 0 ?
-            (successResults.length > 0 ? chalk.green(`0 broken.`) : '') :
-              chalk.red(`${brokenResults.length} broken.`)),
     ]
+
+    if (!compact) {
+      lines.push(
+        result.parent && chalk.dim(`\tfound on ${result.parent.url.toString()}`),
+        linkCount > 0 &&
+          chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedResults.length.toFixed(0)} not checked. `) +
+            (brokenResults.length == 0 ?
+              (successResults.length > 0 ? chalk.green(`0 broken.`) : '') :
+                chalk.red(`${brokenResults.length} broken.`)),
+        )
+    }
 
     /**
      * 404 GET  https://some-broken-link.com
      * 301 HEAD https://some-redirect.com
      */
-    const resultsToPrint: Array<ErrorResult | SuccessResult> = brokenResults.concat(redirectResults)
+    const resultsToPrint: Array<ErrorResult | SuccessResult> = brokenResults.slice()
     if (verbose) {
-      resultsToPrint.push(...okResults)
+      resultsToPrint.push(...redirectResults)
     }
     lines.push(...resultsToPrint.map((r) =>
       colorize(
