@@ -3,7 +3,7 @@ import {} from 'mocha'
 
 import { } from 'async-toolbox/stream'
 import { Logger } from '../logger'
-import { ErrorResult, Result, SuccessResult } from '../model'
+import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
 import { WriteOutFormatter } from './write-out'
 
@@ -16,7 +16,7 @@ describe('WriteOut formatter', () => {
 
     const instance = new WriteOutFormatter({
       logger: logger as unknown as Logger,
-      formatter: 'test %{response_code}\t%{time_total}',
+      formatter: 'test %{response_code}\t%{time_total}\t%{content_type}',
     })
     const result: SuccessResult = {
       type: 'success',
@@ -34,7 +34,7 @@ describe('WriteOut formatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages[0]).to.eq('test 200\t123')
+    expect(messages[0]).to.eq('test 200\t123\ttext/html')
     expect(messages.length).to.eq(1)
   })
 
@@ -89,5 +89,57 @@ describe('WriteOut formatter', () => {
     expect(messages[0]).to.deep.eq(`200 http://test.com/# ==> http://test.com/# (0 123ms)`)
     expect(messages[1]).to.deep.eq(`204 http://test.com/r1 ==> http://test.com/final (3 126ms)`)
     expect(messages.length).to.eq(2)
+  })
+
+  it('ignores skip results', async () => {
+    const messages: string[] = []
+    const logger = { log: (msg: string) => messages.push(msg) }
+
+    const instance = new WriteOutFormatter({
+      logger: logger as unknown as Logger,
+      formatter: 'test %{response_code}\t%{time_total}\t%{content_type}',
+    })
+    const result: SkippedResult = {
+      type: 'skip',
+      url: parseUrl('http://test.com/#'),
+      host: 'test.com',
+      leaf: true,
+      reason: 'external',
+    }
+
+    // act
+    instance.write(result)
+    await instance.endAsync()
+
+    // assert
+    expect(messages.length).to.eq(0)
+  })
+
+  it('writes error results', async () => {
+    const messages: string[] = []
+    const logger = { log: (msg: string) => messages.push(msg) }
+
+    const instance = new WriteOutFormatter({
+      logger: logger as unknown as Logger,
+      formatter: '%{response_code}\t%{error_reason}\t%{error_message}',
+    })
+    const result: ErrorResult = {
+      type: 'error',
+      method: 'GET',
+      url: parseUrl('http://test.com/#'),
+      host: 'test.com',
+      leaf: true,
+      error: new Error('Test Error!'),
+      status: undefined,
+      reason: 'error',
+    }
+
+    // act
+    instance.write(result)
+    await instance.endAsync()
+
+    // assert
+    expect(messages[0]).to.eq('\terror\tTest Error!')
+    expect(messages.length).to.eq(1)
   })
 })

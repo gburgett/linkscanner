@@ -81,6 +81,7 @@ export class WriteOutFormatter extends Writable {
     const resultVars: TemplateVariables = {
       url: result.url.toString(),
       url_effective: result.url.toString(),
+      http_method: result.method,
       num_redirects: 0,
     }
 
@@ -91,12 +92,16 @@ export class WriteOutFormatter extends Writable {
         resultVars.num_redirects = parents.numRedirects + 1,
         resultVars.time_total = parents.ms
       }
+      resultVars.response_code = result.status
+      resultVars.error_reason = result.reason,
+      resultVars.error_message = result.error.message || result.error.toString()
     } else {
       const total = mergeRedirectParents(result)
       resultVars.url = total.url.toString()
       resultVars.num_redirects = total.numRedirects,
       resultVars.time_total = total.ms
       resultVars.response_code = result.status
+      resultVars.content_type = result.contentType || undefined
     }
 
     const {logger, formatter} = this.options
@@ -109,13 +114,17 @@ interface TemplateVariables {
   url: string,
   url_effective: string,
   num_redirects: number,
-  time_total?: number
+  time_total?: number,
+  http_method?: string,
+  content_type?: string
+  error_reason?: string,
+  error_message?: string
 }
 
 function template(templateString: string, templateVariables: TemplateVariables) {
-  return templateString.replace(/[\$\%]{(.*?)}/g, (_, g) => {
+  return templateString.replace(/[\$\%]{([^}]*)}/g, (_, g) => {
     const value = templateVariables[g as keyof TemplateVariables]
-    if (value === undefined) {
+    if (value === undefined || value === null) {
       return ''
     }
     return value.toString()
