@@ -9,6 +9,7 @@ import { EventForwarder } from './event_forwarder'
 import { FetchInterface, FetchInterfaceWrapper } from './fetch_interface'
 import { ConsoleFormatter, ConsoleFormatterOptions } from './formatters/console'
 import { TableFormatter, TableFormatterOptions } from './formatters/table'
+import { WriteOutFormatter, WriteOutFormatterOptions } from './formatters/write-out'
 import { debugLogger, defaultLogger, Logger } from './logger'
 import { Result } from './model'
 import { Parsers } from './parsers'
@@ -17,11 +18,14 @@ import { loadSource } from './source'
 import { assign, Options } from './util'
 
 const formatters = {
-  table: (args: TableFormatterOptions) => new TableFormatter(args),
-  console: (args: ConsoleFormatterOptions) => new ConsoleFormatter(args),
+  'table': (args: TableFormatterOptions) => new TableFormatter(args),
+  'console': (args: ConsoleFormatterOptions) => new ConsoleFormatter(args),
+  'write-out': (args: WriteOutFormatterOptions) => new WriteOutFormatter(args),
 }
 
-const defaultFormatter = (args: TableFormatterOptions & ConsoleFormatterOptions) => {
+type FormatterOptions = TableFormatterOptions & ConsoleFormatterOptions & WriteOutFormatterOptions
+
+const defaultFormatter = (args: FormatterOptions) => {
   if (typeof process == 'undefined' || process.stdout.isTTY) {
     // we're in a nodejs process with output attached to a TTY terminal, OR
     // we're in a browser process.
@@ -82,7 +86,7 @@ const linkscannerDefaults: Readonly<LinkscannerOptions> = {
 }
 
 export interface Args extends LinkscannerOptions {
-  formatter?: keyof typeof formatters | Writable<Result>
+  formatter?: string
   /** Formatter option: more output */
   verbose: boolean,
 
@@ -263,7 +267,7 @@ class Builder {
     return new Builder(_options)
   }
 
-  public readonly _formatters: Array<(args: LinkscannerOptions) => Writable<Result>>
+  public readonly _formatters: Array<[string, (args: FormatterOptions) => Writable<Result>]>
   public readonly _progress?: ProgressBar
 
   private constructor(
@@ -282,20 +286,21 @@ class Builder {
    * formatter by name, or omit the parameter to use the default formatter.
    * @param formatter The formatter to use which will write to the logger.
    */
-  public addFormatter(formatter?: keyof typeof formatters | Writable<Result>): Builder {
-    let f: ((args: LinkscannerOptions) => Writable<Result>) | undefined = (
-      typeof(formatter) == 'object' ?
-        () => formatter
-          : formatter && formatters[formatter] && formatters[formatter]
-    )
-    if (!f) {
+  public addFormatter(formatter?: string): Builder {
+    let f: ((args: FormatterOptions) => Writable<Result>) | undefined
+    if (!formatter) {
       f = defaultFormatter
+    } else if (/[\$\%]{/.test(formatter)) {
+      f = formatters['write-out']
+    }
+    if (!f) {
+      throw new Error(`Unknown formatter: ${formatter}`)
     }
 
     return new Builder(this._options,
       {
         ...this,
-        _formatters: [...this._formatters, f],
+        _formatters: [...this._formatters, [formatter, f]],
       })
   }
 
@@ -329,8 +334,11 @@ class Builder {
    */
   public get(): Linkscanner {
     const linkscanner = new Linkscanner(this._options)
-    this._formatters.forEach((f) => {
-      return linkscanner.pipe(f(this._options))
+    this._formatters.forEach(([name, f]) => {
+      return linkscanner.pipe(f({
+        ...this._options,
+        formatter: name,
+      }))
     })
     if (this._progress) {
       linkscanner.pipe(this._progress)

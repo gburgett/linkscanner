@@ -29,17 +29,17 @@ const argv = yargs
     description: 'Print less information in the output results (formatter dependent)',
     alias: 'c',
   })
-  .option('--no-progress', {
+  .option('no-progress', {
     boolean: true,
     description: 'Do not display a progress bar',
     alias: 'P',
   })
-  .option('--progress', {
+  .option('progress', {
     boolean: true,
     description: 'display a progress bar',
     alias: 'p',
   })
-  .option('--ignore-robots-file', {
+  .option('ignore-robots-file', {
     boolean: true,
     description: 'Causes linkscanner to not respect robots file rules like disallow or crawl delay',
   })
@@ -87,8 +87,8 @@ const argv = yargs
   })
   .option('formatter', {
     alias: ['f', 'format'],
-    description: 'Choose the output formatter',
-    choices: ['table', 'console'] as const,
+    description: 'Choose the output formatter or provide a format string',
+    type: 'string',
   })
   .option('include', {
     alias: 'i',
