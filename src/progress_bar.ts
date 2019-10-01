@@ -124,7 +124,7 @@ export class ProgressBar extends Writable implements Logger {
   }
 
   private _render = async () => {
-    const {checked, latest, currentPause} = this.state
+    const {checked, latest, currentPause, all} = this.state
     const { logger } = this._options
     const width = Math.min(this._options.width || process.stderr.columns || 100, 100)
     const total = this.calculateTotal()
@@ -141,7 +141,8 @@ export class ProgressBar extends Writable implements Logger {
     }
 
     let elapsedStr = formatElapsed(elapsed) + ' '
-    let numChecked = ` ${checked.size.toString().padStart(4)} / ${(total ? total.toString() : '?').padStart(4)}`
+    let numChecked = ` ${checked.size.toString().padStart(4)} / ` +
+      (total ? total : `${all.size}+`).toString().padStart(4)
     let percentage = ` (${(pct ? Math.floor(pct * 100).toString() : '?').padStart(3)}%)`
 
     const topLineParts = [
@@ -326,13 +327,13 @@ const Hour = 60 * Minute
 // tslint:enable: variable-name
 
 function formatElapsed(elapsed: number) {
-  if (elapsed < 2 * Minute) {
+  if (elapsed < Minute) {
     return `${(elapsed / Second).toFixed(0).padStart(4)}s`
   }
-  const s = elapsed % Minute
-  if (elapsed < 2 * Hour) { // 2 hr
-    return `${(elapsed / Second).toFixed(0).padStart(4)}m${s.toFixed(0).padStart(2, '0')}s`
+  const s = (elapsed % Minute) / Second
+  if (elapsed < Hour) {
+    return `${(elapsed / Minute).toFixed(0).padStart(4)}m${s.toFixed(0).padStart(2, '0')}s`
   }
-  const m = elapsed % Hour
+  const m = (elapsed % Hour) / Minute
   return `${(elapsed / Hour).toFixed(0).padStart(4)}h${m.toFixed(0).padStart(2, '0')}m${s.toFixed(0).padStart(2, '0')}s`
 }

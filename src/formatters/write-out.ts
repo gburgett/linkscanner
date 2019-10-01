@@ -79,7 +79,7 @@ export class WriteOutFormatter extends Writable {
 
     if (isRedirectResult(result)) {
       // Is there another result in our results list that this one redirects to?
-      const location = parseUrl(result.headers.Location)
+      const location = result.headers && result.headers.Location && parseUrl(result.headers.Location)
       if (location) {
         const redirectedTo = this.results.get(location.toString())
         if (redirectedTo && !isSkippedResult(redirectedTo)) {
