@@ -11,6 +11,7 @@ import {
   SkippedResult,
   SuccessResult,
 } from '../model'
+import {findNonRedirectParent} from '../model/helpers'
 import { assign, Options, present } from '../util'
 
 export interface ConsoleFormatterOptions {
@@ -215,17 +216,6 @@ export class ConsoleFormatter extends Writable {
 
     const { logger, verbose } = this.options
     logger.log(line0 + '\n' + line1)
-  }
-}
-
-function findNonRedirectParent(parent: SuccessResult | undefined): SuccessResult | undefined {
-  while (parent) {
-    if (![301, 302, 307].includes(parent.status)) {
-      return parent
-    }
-
-    // look up the tree
-    parent = parent.parent
   }
 }
 

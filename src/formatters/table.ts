@@ -3,6 +3,7 @@ import { Writable } from 'stream'
 import { defaultLogger, Logger } from '../logger'
 import { isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
 import { assign, Options, present } from '../util'
+import { mergeRedirectParents } from '../model/helpers'
 
 export interface TableFormatterOptions {
   logger: Logger
@@ -91,28 +92,3 @@ export class TableFormatter extends Writable {
   }
 }
 
-/**
- * Merges several redirect objects into one result representing all the redirects
- * that it took to get to the final result.
- */
-function mergeRedirectParents(child: SuccessResult): SuccessResult {
-  let parent = child.parent
-  while (parent) {
-    if (![301, 302, 307].includes(parent.status)) {
-      return child
-    }
-
-    // "merge" redirect results into the child result
-    child = {
-      // keep the final status, contentType, etc
-      ...child,
-      // sum the total ms
-      ms: child.ms + parent.ms,
-      // use the redirect's URL, cause that's the one found on page
-      url: parent.url,
-      parent: parent.parent,
-    }
-    parent = parent.parent
-  }
-  return child
-}
