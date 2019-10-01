@@ -26,6 +26,7 @@ export function *allParents(result: Result) {
 
 interface EnhancedSuccessResult extends SuccessResult {
   numRedirects: number
+  parentStatus?: number
 }
 
 /**
@@ -34,7 +35,7 @@ interface EnhancedSuccessResult extends SuccessResult {
  */
 export function mergeRedirectParents(child: SuccessResult): EnhancedSuccessResult {
   let parent = child.parent
-  let enhancedChild = {
+  let enhancedChild: EnhancedSuccessResult = {
     ...child,
     numRedirects: 0,
   }
@@ -45,12 +46,13 @@ export function mergeRedirectParents(child: SuccessResult): EnhancedSuccessResul
 
     // "merge" redirect results into the child result
     enhancedChild = {
-      // keep the final status, contentType, etc
+      // keep the final contentType, etc
       ...enhancedChild,
       // sum the total ms
       ms: enhancedChild.ms + parent.ms,
       // use the redirect's URL, cause that's the one found on page
       url: parent.url,
+      parentStatus: parent.status,
       parent: parent.parent,
       numRedirects: enhancedChild.numRedirects + 1,
     }

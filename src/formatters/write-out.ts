@@ -83,24 +83,27 @@ export class WriteOutFormatter extends Writable {
       url_effective: result.url.toString(),
       http_method: result.method,
       num_redirects: 0,
+      response_code: result.status,
+      response_code_effective: result.status,
     }
 
     if (isErrorResult(result)) {
+      resultVars.error_reason = result.reason,
+      resultVars.error_message = result.error.message || result.error.toString()
+
       const parents = result.parent && mergeRedirectParents(result.parent)
       if (parents) {
         resultVars.url = parents.url.toString()
         resultVars.num_redirects = parents.numRedirects + 1,
         resultVars.time_total = parents.ms
+        resultVars.response_code = parents.status
       }
-      resultVars.response_code = result.status
-      resultVars.error_reason = result.reason,
-      resultVars.error_message = result.error.message || result.error.toString()
     } else {
       const total = mergeRedirectParents(result)
       resultVars.url = total.url.toString()
       resultVars.num_redirects = total.numRedirects,
       resultVars.time_total = total.ms
-      resultVars.response_code = result.status
+      if (total.parentStatus) { resultVars.response_code = total.parentStatus }
       resultVars.content_type = result.contentType || undefined
     }
 
@@ -111,6 +114,7 @@ export class WriteOutFormatter extends Writable {
 
 interface TemplateVariables {
   response_code?: number,
+  response_code_effective?: number,
   url: string,
   url_effective: string,
   num_redirects: number,

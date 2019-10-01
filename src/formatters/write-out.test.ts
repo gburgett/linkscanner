@@ -44,7 +44,7 @@ describe('WriteOut formatter', () => {
 
     const instance = new WriteOutFormatter({
       logger: logger as unknown as Logger,
-      formatter: '%{response_code} %{url} ==> %{url_effective} (%{num_redirects} %{time_total}ms)',
+      formatter: '%{response_code} %{url} ==> %{response_code_effective} %{url_effective} (%{num_redirects} %{time_total}ms)',
     })
     const top: SuccessResult = {
       type: 'success',
@@ -86,8 +86,8 @@ describe('WriteOut formatter', () => {
 
     // assert
     // tslint:disable-next-line: max-line-length
-    expect(messages[0]).to.deep.eq(`200 http://test.com/# ==> http://test.com/# (0 123ms)`)
-    expect(messages[1]).to.deep.eq(`204 http://test.com/r1 ==> http://test.com/final (3 126ms)`)
+    expect(messages[0]).to.deep.eq(`200 http://test.com/# ==> 200 http://test.com/# (0 123ms)`)
+    expect(messages[1]).to.deep.eq(`301 http://test.com/r1 ==> 204 http://test.com/final (3 126ms)`)
     expect(messages.length).to.eq(2)
   })
 

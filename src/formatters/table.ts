@@ -2,8 +2,8 @@ import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
 import { isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
-import { assign, Options, present } from '../util'
 import { mergeRedirectParents } from '../model/helpers'
+import { assign, Options, present } from '../util'
 
 export interface TableFormatterOptions {
   logger: Logger
@@ -91,4 +91,3 @@ export class TableFormatter extends Writable {
     logger.log(formattedLine.join('\t'))
   }
 }
-
