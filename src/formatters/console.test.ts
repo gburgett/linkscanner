@@ -17,13 +17,16 @@ describe('ConsoleFormatter', () => {
     })
 
     const successResult: SuccessResult = {
+      type: 'success',
       method: 'GET',
       url: parseUrl('http://www.test.com'),
       host: 'www.test.com',
       status: 200,
       ms: 123,
+      contentType: 'text/html',
       links: [parseUrl('http://www.test.com/asdf')],
-    } as SuccessResult
+      headers: {},
+    }
     instance.write(successResult)
 
     const skippedResult: SkippedResult = {
@@ -66,6 +69,7 @@ describe('ConsoleFormatter', () => {
       ms: 123,
       links: [parseUrl('http://www.test.com/asdf')],
       contentType: '',
+      headers: {},
     }
     instance.write(notFoundResult)
 
@@ -87,6 +91,7 @@ describe('ConsoleFormatter', () => {
         ms: 123,
         status: 200,
         type: 'success',
+        headers: {},
       },
     }
     instance.write(errorResult)
@@ -119,6 +124,7 @@ describe('ConsoleFormatter', () => {
       status: 200,
       ms: 123,
       links: [parseUrl('http://www.test2.com')],
+      headers: {},
     }
 
     instance.write(parent)
@@ -134,7 +140,8 @@ describe('ConsoleFormatter', () => {
       status: 500,
       ms: 123,
       links: [],
-    } as Result)
+      headers: {},
+    } as SuccessResult)
     instance.end()
 
     await instance.onceAsync('finish')
@@ -165,6 +172,7 @@ describe('ConsoleFormatter', () => {
       status: 200,
       ms: 123,
       links: [parseUrl('http://www.test2.com')],
+      headers: {},
     }
     const child1: Result = {
       parent,
@@ -176,6 +184,7 @@ describe('ConsoleFormatter', () => {
       status: 201,
       ms: 123,
       links: [parseUrl('http://www.test3.com')],
+      headers: {},
     }
     const child2: Result = {
       type: 'success',
@@ -188,6 +197,7 @@ describe('ConsoleFormatter', () => {
       status: 500,
       ms: 123,
       links: [],
+      headers: {},
     }
 
     instance.write(parent)

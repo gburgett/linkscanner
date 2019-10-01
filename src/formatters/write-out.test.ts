@@ -27,6 +27,7 @@ describe('WriteOut formatter', () => {
       host: 'test.com',
       ms: 123,
       links: [],
+      headers: {},
     }
 
     // act
@@ -55,15 +56,14 @@ describe('WriteOut formatter', () => {
       host: 'test.com',
       ms: 123,
       links: [parseUrl('http://test.com/r1')],
+      headers: {},
     }
 
-    // tslint:disable: max-line-length
     const redirects: SuccessResult[] = [
-      { type: 'success', status: 301, ms: 1, url: parseUrl('http://test.com/r1'), parent: top, method: 'GET', contentType: '', host: 'test.com', links: [] },
+      { type: 'success', status: 301, ms: 1, url: parseUrl('http://test.com/r1'), parent: top, method: 'GET', contentType: '', host: 'test.com', links: [], headers: {} },
     ]
-    redirects.push({ type: 'success', status: 302, ms: 1, url: parseUrl('http://test.com/r2'), parent: redirects[0], method: 'GET', contentType: '', host: 'test.com', links: []})
-    redirects.push({ type: 'success', status: 307, ms: 1, url: parseUrl('http://test.com/r3'), parent: redirects[1], method: 'GET', contentType: '', host: 'test.com', links: []})
-    // tslint:disable: max-line-length
+    redirects.push({ type: 'success', status: 302, ms: 1, url: parseUrl('http://test.com/r2'), parent: redirects[0], method: 'GET', contentType: '', host: 'test.com', links: [], headers: {}})
+    redirects.push({ type: 'success', status: 307, ms: 1, url: parseUrl('http://test.com/r3'), parent: redirects[1], method: 'GET', contentType: '', host: 'test.com', links: [], headers: {}})
 
     const final: SuccessResult = {
       type: 'success',
@@ -76,6 +76,7 @@ describe('WriteOut formatter', () => {
       ms: 123,
       leaf: true,
       links: [],
+      headers: {},
     }
 
     // act
@@ -141,5 +142,41 @@ describe('WriteOut formatter', () => {
     // assert
     expect(messages[0]).to.eq('\terror\tTest Error!')
     expect(messages.length).to.eq(1)
+  })
+
+  it('does not orphan redirects where we already hit the destination', async () => {
+    const messages: string[] = []
+    const logger = { log: (msg: string) => messages.push(msg) }
+
+    const instance = new WriteOutFormatter({
+      logger: logger as unknown as Logger,
+      formatter: '%{response_code} %{url} ==> %{response_code_effective} %{url_effective} (%{num_redirects} %{time_total}ms)',
+    })
+    const page: SuccessResult = {
+      type: 'success',
+      status: 200,
+      method: 'GET',
+      url: parseUrl('http://test.com/some-page'),
+      contentType: 'text/html',
+      host: 'test.com',
+      ms: 123,
+      links: [],
+      headers: {},
+    }
+
+    // tslint:disable: max-line-length
+    const redirects: SuccessResult[] = [
+      { type: 'success', status: 301, ms: 1, url: parseUrl('http://test.com/r1'), parent: undefined, method: 'GET', contentType: '', host: 'test.com', links: [],
+        headers: {Location: 'http://test.com/some-page'} },
+    ]
+
+    // act
+    instance.write(page)
+    redirects.forEach((r) => instance.write(r))
+    await instance.endAsync()
+
+    expect(messages[0]).to.deep.eq(`200 http://test.com/some-page ==> 200 http://test.com/some-page (0 123ms)`)
+    expect(messages[1]).to.deep.eq(`301 http://test.com/r1 ==> 200 http://test.com/some-page (1 124ms)`)
+    expect(messages.length).to.eq(2)
   })
 })

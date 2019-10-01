@@ -26,6 +26,7 @@ describe('TableFormatter', () => {
       host: 'test.com',
       ms: 123,
       links: [],
+      headers: {},
     }
 
     // act
@@ -55,6 +56,7 @@ describe('TableFormatter', () => {
       host: 'test.com',
       ms: 123,
       links: [],
+      headers: {},
     }
     const result: ErrorResult = {
       type: 'error',
@@ -97,6 +99,7 @@ describe('TableFormatter', () => {
       host: 'test.com',
       ms: 123,
       links: [],
+      headers: {},
     }
     instance.write(r0)
 
@@ -138,14 +141,15 @@ describe('TableFormatter', () => {
       host: 'test.com',
       ms: 123,
       links: [parseUrl('http://test.com/r1')],
+      headers: {},
     }
 
     // tslint:disable: max-line-length
     const redirects: SuccessResult[] = [
-      { type: 'success', status: 301, ms: 1, url: parseUrl('http://test.com/r1'), parent: top, method: 'GET', contentType: '', host: 'test.com', links: [] },
+      { type: 'success', status: 301, ms: 1, url: parseUrl('http://test.com/r1'), parent: top, method: 'GET', contentType: '', host: 'test.com', links: [], headers: {} },
     ]
-    redirects.push({ type: 'success', status: 302, ms: 1, url: parseUrl('http://test.com/r2'), parent: redirects[0], method: 'GET', contentType: '', host: 'test.com', links: []})
-    redirects.push({ type: 'success', status: 307, ms: 1, url: parseUrl('http://test.com/r3'), parent: redirects[1], method: 'GET', contentType: '', host: 'test.com', links: []})
+    redirects.push({ type: 'success', status: 302, ms: 1, url: parseUrl('http://test.com/r2'), parent: redirects[0], method: 'GET', contentType: '', host: 'test.com', links: [], headers: {}})
+    redirects.push({ type: 'success', status: 307, ms: 1, url: parseUrl('http://test.com/r3'), parent: redirects[1], method: 'GET', contentType: '', host: 'test.com', links: [], headers: {}})
     // tslint:disable: max-line-length
 
     const final: SuccessResult = {
@@ -159,6 +163,7 @@ describe('TableFormatter', () => {
       ms: 123,
       leaf: true,
       links: [],
+      headers: {},
     }
 
     // act

@@ -148,6 +148,7 @@ export class Fetcher extends ParallelTransform {
     const fullResult: SuccessResult = Object.assign(partialResult, {
       type: 'success' as const,
       status: response.status,
+      headers: convertHeaders(response.headers),
       contentType,
       ms: end - start,
     })
@@ -264,4 +265,13 @@ function infiniteRedirect(location: URL, parent: SuccessResult | undefined): boo
   }
 
   return false
+}
+
+function convertHeaders(headers: Headers) {
+  const hash: { [key: string]: string } = {}
+
+  headers.forEach((value, key) => {
+    hash[key] = value
+  })
+  return hash
 }

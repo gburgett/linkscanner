@@ -1,8 +1,9 @@
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { isErrorResult, isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
+import { isErrorResult, isRedirectResult, isSkippedResult, isSuccessResult, Result, SkippedResult, SuccessResult } from '../model'
 import { allParents, findNonRedirectParent, mergeRedirectParents } from '../model/helpers'
+import { parseUrl } from '../url'
 import { assign, Options } from '../util'
 
 export interface WriteOutFormatterOptions {
@@ -74,6 +75,23 @@ export class WriteOutFormatter extends Writable {
     if (isSkippedResult(result)) {
       // ignore
       return
+    }
+
+    if (isRedirectResult(result)) {
+      // Is there another result in our results list that this one redirects to?
+      const location = parseUrl(result.headers.Location)
+      if (location) {
+        const redirectedTo = this.results.get(location.toString())
+        if (redirectedTo && !isSkippedResult(redirectedTo)) {
+          // Make a fake result pointing up to this redirect
+          // Aside: I'm impressed that Typescript can infer Result is not a
+          // SkippedResult after this line
+          result = {
+            ...redirectedTo,
+            parent: result,
+          }
+        }
+      }
     }
 
     this.flushed.add(result.url.toString())

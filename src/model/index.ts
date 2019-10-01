@@ -16,6 +16,7 @@ export interface SuccessResult extends ResultCommon {
   ms: number
   links: URL[]
   leaf?: boolean
+  headers: { [key: string]: string }
 }
 
 export function isSuccessResult(result: Result): result is SuccessResult {
@@ -31,6 +32,7 @@ export interface ErrorResult extends ResultCommon {
   status: number | undefined
   reason: ErrorReason
   error: Error
+  headers?: { [key: string]: string }
   leaf: true
 }
 
@@ -49,6 +51,22 @@ export type SkipReason = typeof skipReasons[number]
 
 export function isSkippedResult(result: Result): result is SkippedResult {
   return result.type == 'skip'
+}
+
+export interface RedirectResult extends SuccessResult {
+  status: 301 | 302 | 307 | 308
+  headers: {
+    Location: string
+    [key: string]: string,
+  }
+}
+
+export function isRedirectResult(result: Result): result is RedirectResult {
+  if (!isSuccessResult(result)) {
+    return false
+  }
+
+  return [301, 302, 307, 308].includes(result.status)
 }
 
 export interface Chunk {
