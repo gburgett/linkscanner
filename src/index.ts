@@ -92,6 +92,7 @@ export interface Args extends LinkscannerOptions {
 
   debug: boolean
   progress: boolean
+  total?: number
 }
 
 export const runDefaults: Readonly<Args> = {
@@ -131,6 +132,7 @@ class Linkscanner extends Transform {
       // Attach a progress bar
       builder = builder.progress({
         debug: options.debug,
+        total: options.total,
       })
     }
 
@@ -216,7 +218,7 @@ class Linkscanner extends Transform {
     results.on('error', (err) => this.emit('error', err))
 
     new EventForwarder({
-      only: ['url', 'fetch', 'response'],
+      only: ['url', 'fetch', 'response', 'EOS'],
     })
       .from(results)
       .to(this)

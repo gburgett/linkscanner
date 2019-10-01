@@ -39,6 +39,10 @@ const argv = yargs
     description: 'display a progress bar',
     alias: 'p',
   })
+  .option('total', {
+    type: 'number',
+    description: 'Give the progress bar a hint of approx how many URLs we will scan',
+  })
   .option('ignore-robots-file', {
     boolean: true,
     description: 'Causes linkscanner to not respect robots file rules like disallow or crawl delay',
@@ -120,6 +124,7 @@ if (options.progress) {
   // Attach a progress bar
   builder = builder.progress({
     debug: argv.debug,
+    total: argv.total,
   })
 }
 const logger = builder._options.logger
