@@ -327,13 +327,18 @@ const Hour = 60 * Minute
 // tslint:enable: variable-name
 
 function formatElapsed(elapsed: number) {
-  if (elapsed < Minute) {
-    return `${(elapsed / Second).toFixed(0).padStart(4)}s`
+  const ms = elapsed % 1000
+  elapsed = (elapsed - ms) / 1000
+  const secs = elapsed % 60
+  elapsed = (elapsed - secs) / 60
+  const mins = elapsed % 60
+  const hrs = (elapsed - mins) / 60
+
+  if (mins <= 0) {
+    return `${(secs).toFixed(0).padStart(4)}s`
   }
-  const s = (elapsed % Minute) / Second
-  if (elapsed < Hour) {
-    return `${(elapsed / Minute).toFixed(0).padStart(4)}m${s.toFixed(0).padStart(2, '0')}s`
+  if (hrs <= 0) {
+    return `${(mins).toFixed(0).padStart(4)}m${secs.toFixed(0).padStart(2, '0')}s`
   }
-  const m = (elapsed % Hour) / Minute
-  return `${(elapsed / Hour).toFixed(0).padStart(4)}h${m.toFixed(0).padStart(2, '0')}m${s.toFixed(0).padStart(2, '0')}s`
+  return `${(hrs).toFixed(0).padStart(4)}h${mins.toFixed(0).padStart(2, '0')}m${secs.toFixed(0).padStart(2, '0')}s`
 }
