@@ -284,7 +284,7 @@ Allow: *`)
     const uut = BuildPipeline(source, {
       ...options,
       recursive: 0,
-      forceGet: true
+      forceGet: true,
     })
 
     const urls = [] as any[]
@@ -314,7 +314,7 @@ Allow: *`)
 
     const uut = BuildPipeline(source, {
       ...options,
-      recursive: 0
+      recursive: 0,
     })
 
     const urls = [] as any[]

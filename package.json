@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "lint": "tslint 'src/**/*.ts'",
+    "fix": "tslint --fix 'src/**/*.ts'",
     "test-cover": "tsc --project tsconfig.test.json && nyc mocha 'src/**/*.test.js' 'src/**/*.test.node.js'",
     "test-node": "mocha --require ts-node/register src/*.test.ts src/**/*.test.ts src/**/*.test.node.ts",
     "test-browser": "npm run clean && karma start",

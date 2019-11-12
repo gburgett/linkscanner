@@ -1,8 +1,8 @@
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { isErrorResult, isRedirectResult, isSkippedResult, isSuccessResult, Result, SkippedResult, SuccessResult } from '../model'
-import { allParents, findNonRedirectParent, mergeRedirectParents } from '../model/helpers'
+import { isErrorResult, isRedirectResult, isSkippedResult, Result } from '../model'
+import { allParents, mergeRedirectParents } from '../model/helpers'
 import { parseUrl } from '../url'
 import { assign, Options } from '../util'
 

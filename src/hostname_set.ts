@@ -40,7 +40,7 @@ export class HostnameSet {
       logger: defaultLogger,
       fetch: crossFetch,
       maxConcurrency: 1,
-      parsers: {}
+      parsers: {},
     },
       options)
   }
