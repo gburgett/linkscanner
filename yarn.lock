@@ -776,9 +776,9 @@
     "@types/serve-static" "*"
 
 "@types/fetch-mock@^7.2.3":
-  version "7.2.5"
-  resolved "https://registry.yarnpkg.com/@types/fetch-mock/-/fetch-mock-7.2.5.tgz#512f8beec4007a90db6269660b6b4f5e04682d87"
-  integrity sha512-iJSYZ4PjDdBShaEUWOy7wXWRlI6fHLDVHd+AnUggNjjNsict7qJOeZiejnFDSETECxFgdQ7BSBEFhR4U+k0FHw==
+  version "7.3.1"
+  resolved "https://registry.yarnpkg.com/@types/fetch-mock/-/fetch-mock-7.3.1.tgz#df7421e8bcb351b430bfbfa5c52bb353826ac94f"
+  integrity sha512-2U4vZWHNbsbK7TRmizgr/pbKe0FKopcxu+hNDtIBDiM1wvrKRItybaYj7VQ6w/hZJStU/JxRiNi5ww4YDEvKbA==
 
 "@types/glob@^7.1.1":
   version "7.1.1"
