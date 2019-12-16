@@ -67,7 +67,7 @@
     "karma-sourcemap-loader": "^0.3.7",
     "karma-webpack": "^4.0.2",
     "mocha": "^5.2.0",
-    "nodemon": "^1.18.10",
+    "nodemon": "^2.0.2",
     "nyc": "^13.3.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.0.2",
