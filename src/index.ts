@@ -17,7 +17,7 @@ import { ProgressBar, ProgressBarOptions } from './progress_bar'
 import { loadSource } from './source'
 import { assign, Options } from './util'
 
-const formatters = {
+const formatters: { [name: string]: (args: FormatterOptions) => Writable<Result> } = {
   'table': (args: TableFormatterOptions) => new TableFormatter(args),
   'console': (args: ConsoleFormatterOptions) => new ConsoleFormatter(args),
   'write-out': (args: WriteOutFormatterOptions) => new WriteOutFormatter(args),
@@ -170,12 +170,12 @@ class Linkscanner extends Transform {
    * This consumes the linkscanner.
    */
   public async run(source: string | string[]): Promise<void> {
-    loadSource({source})
+    loadSource({source}, this._options.logger)
       .pipe(this)
 
     // debugStreams({
     //   linkscanner: this,
-    // }, this._options.logger)
+    // })
 
     await onceAsync(this, 'end')
   }
@@ -292,6 +292,8 @@ class Builder {
     let f: ((args: FormatterOptions) => Writable<Result>) | undefined
     if (!formatter) {
       f = defaultFormatter
+    } else if (formatters[formatter]) {
+      f = formatters[formatter]
     } else if (/[\$\%]{/.test(formatter)) {
       f = formatters['write-out']
     }

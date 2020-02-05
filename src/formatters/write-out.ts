@@ -72,6 +72,7 @@ export class WriteOutFormatter extends Writable {
   }
 
   private _flush(result: Result) {
+    const {logger, formatter} = this.options
     if (isSkippedResult(result)) {
       // ignore
       return
@@ -124,8 +125,6 @@ export class WriteOutFormatter extends Writable {
       if (total.parentStatus) { resultVars.response_code = total.parentStatus }
       resultVars.content_type = result.contentType || undefined
     }
-
-    const {logger, formatter} = this.options
     logger.log(template(formatter, resultVars))
   }
 }

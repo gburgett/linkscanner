@@ -86,8 +86,7 @@ const argv = yargs
   })
   .option('headers', {
     alias: 'H',
-    type: 'string',
-    array: true,
+    type: 'array',
   })
   .option('formatter', {
     alias: ['f', 'format'],

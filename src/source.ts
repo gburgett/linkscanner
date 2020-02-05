@@ -1,12 +1,14 @@
 import {toReadable} from 'async-toolbox/stream'
 import { EOL } from 'os'
 import { Transform } from 'stream'
+import { Logger } from './logger'
 
-export function loadSource(args: { source: string | string[] }) {
+export function loadSource(args: { source: string | string[] }, logger: Logger) {
   // specify '-' to read from stdin
   if (args.source == '-' || args.source == ['-'] ||
       // or if no URL is given on the command line
       args.source.length == 0 && typeof process != 'undefined') {
+    logger.debug('reading URLs from STDIN')
     return process.stdin.pipe(new LineByLineTransform())
   }
   return toReadable(Array.from(args.source))

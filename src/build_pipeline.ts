@@ -165,7 +165,7 @@ export function BuildPipeline(
   //   fetcher,
   //   eofHandler,
   //   results,
-  // }, logger)
+  // })
 
   // The CLI or consuming program needs the readable stream of results
   return results
