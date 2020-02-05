@@ -186,7 +186,7 @@ export class ProgressBar extends Writable implements Logger {
 
     const msg = topLineParts.join('')
     // log a cleared blank line
-    logger.error('\x1b[2k')
+    logger.error('\x1b[2K')
     // clear the current line before writing the msg
     logger.error('\x1b[2K' + msg)
     // write the latest hit line
