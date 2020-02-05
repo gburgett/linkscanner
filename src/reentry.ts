@@ -63,6 +63,8 @@ export class Reentry extends Transform {
   }
 
   private _run(chunk: Chunk) {
+    // The server doesn't care about the hash
+    chunk.url.hash = ''
     const checked = this._checked.get(chunk.url.toString())
     if (checked) {
       // Only re-check if this request is not a leaf (i.e. came in from the source stream)
