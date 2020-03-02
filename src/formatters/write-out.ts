@@ -12,6 +12,8 @@ export interface WriteOutFormatterOptions {
 }
 
 export class WriteOutFormatter extends Writable {
+
+  public static readonly templateRegexp = /[\$\%]{(?<key>[^}]*)}/g
   private readonly options: WriteOutFormatterOptions
 
   private readonly results = new Map<string, Result>()
@@ -32,6 +34,8 @@ export class WriteOutFormatter extends Writable {
       options,
       { formatter },
     )
+
+    this.validateTemplate()
   }
 
   public _write(result: Result, encoding: any, cb: (error?: Error | null) => void) {
@@ -72,7 +76,7 @@ export class WriteOutFormatter extends Writable {
   }
 
   private _flush(result: Result) {
-    const {logger, formatter} = this.options
+    const {logger} = this.options
     if (isSkippedResult(result)) {
       // ignore
       return
@@ -125,7 +129,35 @@ export class WriteOutFormatter extends Writable {
       if (total.parentStatus) { resultVars.response_code = total.parentStatus }
       resultVars.content_type = result.contentType || undefined
     }
-    logger.log(template(formatter, resultVars))
+    logger.log(this.template(resultVars))
+  }
+
+  private template(templateVariables: TemplateVariables) {
+    const { formatter } = this.options
+    return formatter.replace(WriteOutFormatter.templateRegexp, (_, g) => {
+      const value = templateVariables[g as keyof TemplateVariables]
+      if (value === undefined || value === null) {
+        return ''
+      }
+      return value.toString()
+    })
+  }
+
+  private validateTemplate() {
+    const {logger, formatter} = this.options
+    let matchedOne = false
+    let matches: RegExpExecArray | null
+    // tslint:disable-next-line: no-conditional-assignment
+    while (matches = WriteOutFormatter.templateRegexp.exec(formatter)) {
+      matchedOne = true
+      if (matches.groups &&
+          !templateKeys.includes(matches.groups.key as keyof TemplateVariables)) {
+        logger.error(`Warning: Unknown write-out key '${matches[0]}'\n\tmust be one of ${templateKeys}`)
+      }
+    }
+    if (!matchedOne) {
+      logger.error(`Warning: write-out format contains no template variables`)
+    }
   }
 }
 
@@ -142,12 +174,15 @@ interface TemplateVariables {
   error_message?: string
 }
 
-function template(templateString: string, templateVariables: TemplateVariables) {
-  return templateString.replace(/[\$\%]{([^}]*)}/g, (_, g) => {
-    const value = templateVariables[g as keyof TemplateVariables]
-    if (value === undefined || value === null) {
-      return ''
-    }
-    return value.toString()
-  })
-}
+const templateKeys: Array<keyof TemplateVariables> = [
+  'content_type',
+  'error_message',
+  'error_reason',
+  'http_method',
+  'num_redirects',
+  'response_code',
+  'response_code_effective',
+  'time_total',
+  'url',
+  'url_effective',
+]
