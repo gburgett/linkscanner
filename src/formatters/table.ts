@@ -1,7 +1,7 @@
 import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { isSkippedResult, isSuccessResult, Result, SuccessResult } from '../model'
+import { isSkippedResult, isSuccessResult, Result } from '../model'
 import { mergeRedirectParents } from '../model/helpers'
 import { assign, Options, present } from '../util'
 
@@ -57,8 +57,8 @@ export class TableFormatter extends Writable {
 
     if (!verbose) {
       if (isSuccessResult(result)) {
-        if ([301, 302, 307].includes(result.status)) {
-            // don't log redirects unless verbose
+        if (!result.leaf && [301, 302, 307].includes(result.status)) {
+            // don't log non-leaf redirects unless verbose
           return
         }
 
