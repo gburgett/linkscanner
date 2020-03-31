@@ -13,7 +13,7 @@ export interface WriteOutFormatterOptions {
 
 export class WriteOutFormatter extends Writable {
 
-  public static readonly templateRegexp = /[\$\%]{(?<key>[^}]*)}/g
+  public static readonly templateRegexp = /[\$\%]\{(?<key>[^\}]*)\}/g
   private readonly options: WriteOutFormatterOptions
 
   private readonly results = new Map<string, Result>()
