@@ -8,7 +8,9 @@ import { JsonParser } from './json-parser'
 
 describe('JsonParser', () => {
   it('finds a URL in the json body', async () => {
-    const parser = new JsonParser()
+    const parser = new JsonParser({
+      include: ["all"]
+    })
 
     const { req, resp } = await makeResp(
       'https://some-json.com',
@@ -18,12 +20,15 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://google.com/')
+    expect(results.map((r) => r.toString())).to.deep.eq([
+      'https://google.com/'
+    ])
   })
 
   it('finds non-relative URLs in some json', async () => {
-    const parser = new JsonParser()
+    const parser = new JsonParser({
+      include: ["all"]
+    })
 
     const { req, resp } = await makeResp(
       'https://some-json.com/some-path',
@@ -32,12 +37,15 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://some-json.com/other-path')
+    expect(results.map((r) => r.toString())).to.deep.eq([
+      'https://some-json.com/other-path'
+    ])
   })
 
   it('handles protocol relative URLs', async () => {
-    const parser = new JsonParser()
+    const parser = new JsonParser({
+      include: ["all"]
+    })
 
     const { req, resp } = await makeResp(
       'https://some-json.com/some-path',
@@ -46,12 +54,15 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://images.ctfassets.net/asdf.png')
+    expect(results.map((r) => r.toString())).to.deep.eq([
+      'https://images.ctfassets.net/asdf.png'
+    ])
   })
 
   it('handles URLs in whitespace', async () => {
-    const parser = new JsonParser()
+    const parser = new JsonParser({
+      include: ["all"]
+    })
 
     const { req, resp } = await makeResp(
       'https://some-json.com/some-path',
@@ -60,8 +71,45 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('http://images.ctfassets.net/asdf.png')
+
+    expect(results.map((r) => r.toString())).to.deep.eq([
+      'http://images.ctfassets.net/asdf.png'
+    ])
+  })
+
+  it('by default scans only "links" and "_links" objects', async () => {
+    const data = {
+      data: {
+        slug: '/test-slug',
+        links: { self: "/some-rel-link" },
+        _links: {
+          other: "/some-other-rel-link",
+          google: "https://www.google.com"
+        }
+      },
+      _links: {
+        thirdLink: '/some-third-link'
+      }
+    }
+
+    const parser = new JsonParser({
+    })
+
+    const { req, resp } = await makeResp(
+      'https://some-json.com/some-path',
+      JSON.stringify(data),
+    )
+    const results: URL[] = []
+    await parser.parse(resp, req, (result) => results.push(result))
+
+    // order doesn't matter in these results
+    const sorted = results.map(r => r.toString()).sort()
+    expect(sorted).to.deep.eq([
+      'https://some-json.com/some-other-rel-link',
+      'https://some-json.com/some-rel-link',
+      'https://some-json.com/some-third-link',
+      "https://www.google.com/",
+    ])
   })
 })
 
