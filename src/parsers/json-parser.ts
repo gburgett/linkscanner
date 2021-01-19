@@ -23,13 +23,16 @@ export class JsonParser {
     this._options = assign(
       {
         logger: defaultLogger,
-        include: defaultIncludes,
+        include: [],
       },
       options,
     )
 
     if (this._options.include.includes('all')) {
       this._options.include = ['$..*']
+    } else {
+      this._options.include =
+        this._options.include.concat(...defaultIncludes)
     }
   }
 
