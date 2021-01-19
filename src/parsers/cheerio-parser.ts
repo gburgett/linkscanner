@@ -17,6 +17,11 @@ const allSelectors = [
   'form',
 ]
 
+const defaultSelectors = [
+  'a[href]',
+  'link[rel="canonical"]',
+]
+
 export class CheerioParser {
   private readonly _options: ParserOptions
 
@@ -24,16 +29,16 @@ export class CheerioParser {
     this._options = assign(
       {
         logger: defaultLogger,
-        include: [
-          'a[href]',
-          'link[rel="canonical"]',
-        ],
+        include: [],
       },
       options,
     )
 
     if (this._options.include.includes('all')) {
       this._options.include = allSelectors
+    } else {
+      this._options.include =
+        this._options.include.concat(...defaultSelectors)
     }
   }
 
