@@ -10,7 +10,7 @@ const defaultIncludes = [
   '$..links',
   '$.._links',
   '$..link',
-  '$.._link'
+  '$.._link',
 ]
 
 export class JsonParser {
@@ -62,7 +62,7 @@ export class JsonParser {
   }
 
   private* traverse(json: any): Iterable<string> {
-    for(const path of this._options.include) {
+    for (const path of this._options.include) {
       for (const obj of JSONPath({ path, json })) {
           // directly selected strings
         if (typeof obj == 'string') {
@@ -81,7 +81,7 @@ export class JsonParser {
           for (const key of Object.keys(obj)) {
             if (!obj.hasOwnProperty(key)) { continue }
             if (typeof obj[key] != 'string') { continue }
-  
+
             yield obj[key]
           }
         }
