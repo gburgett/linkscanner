@@ -26,6 +26,7 @@
     "coverage": "npm run test-cover && nyc report --reporter=html && open coverage/index.html",
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "build": "tsc",
+    "check-types": "tsc --noemit",
     "prepublishOnly": "npm run build",
     "clean": "rm -rf dist; bash -c 'shopt -s globstar; rm src/**/*.js src/**/*.map src/**/*.d.ts'; true"
   },
