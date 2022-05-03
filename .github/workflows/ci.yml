@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:    
+      - master
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node 14
+      uses: actions/setup-node@v3
+      with:
+        node-version: 14
+
+    - name: Install Yarn
+      run: npm install -g yarn
+
+    - name: Install Dependencies
+      run: yarn --ignore-scripts
+
+    - name: Lint
+      run: yarn lint
+
+    - name: check types
+      run: yarn check-types
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node 14
+      uses: actions/setup-node@v3
+      with:
+        node-version: 14
+
+    - name: Install Yarn
+      run: npm install -g yarn
+
+    - name: Install Dependencies
+      run: yarn install
+
+    - name: Jest
+      run: yarn test-cover
+
+    - name: Upload coverage to Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
