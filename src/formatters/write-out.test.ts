@@ -1,6 +1,4 @@
 
-
-
 import { } from 'async-toolbox/stream'
 import { Logger } from '../logger'
 import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'

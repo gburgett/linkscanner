@@ -3,7 +3,6 @@ import { collect, toReadable } from 'async-toolbox/stream'
 
 import fetchMock from 'fetch-mock'
 
-
 import { BuildPipeline, BuildPipelineOptions } from './build_pipeline'
 import { Result, SuccessResult } from './model'
 import { Options } from './util'

@@ -1,7 +1,5 @@
 import {} from 'async-toolbox/events'
 
-
-
 import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
 import { ConsoleFormatter } from './console'
