@@ -1,5 +1,5 @@
-import { expect } from 'chai'
-import {} from 'mocha'
+
+
 
 import { } from 'async-toolbox/stream'
 import { Logger } from '../logger'
@@ -34,9 +34,9 @@ describe('TableFormatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages.length).to.eq(2)
-    expect(messages[0]).to.eq('status\tmethod\turl                                                                             \tcontentType     \t  ms\tparent                                                                          \terror')
-    expect(messages[1]).to.deep.eq(`200   \tGET   \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t                                                                                \t     `)
+    expect(messages.length).toEqual(2)
+    expect(messages[0]).toEqual('status\tmethod\turl                                                                             \tcontentType     \t  ms\tparent                                                                          \terror')
+    expect(messages[1]).toEqual(`200   \tGET   \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t                                                                                \t     `)
   })
 
   it('pads appropriately for error results', async () => {
@@ -75,8 +75,8 @@ describe('TableFormatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages.length).to.eq(2)
-    expect(messages[1]).to.deep.eq(`      \tGET   \t${'http://test.com/2'.padEnd(80)}\t                \t    ` +
+    expect(messages.length).toEqual(2)
+    expect(messages[1]).toEqual(`      \tGET   \t${'http://test.com/2'.padEnd(80)}\t                \t    ` +
       `\thttp://test.com/#                                                               \tError: test`)
   })
 
@@ -118,11 +118,11 @@ describe('TableFormatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages.length).to.eq(3)
+    expect(messages.length).toEqual(3)
     // tslint:disable: max-line-length
-    expect(messages[0]).to.eq('status\tmethod\turl                                                                             \tcontentType     \t  ms\tparent                                                                          \terror')
-    expect(messages[1]).to.eq('200   \tGET   \thttp://test.com/#                                                               \ttext/html       \t 123\t                                                                                \t     ')
-    expect(messages[2]).to.eq('      \tGET   \thttp://test.com/2                                                               \t                \t 456\thttp://test.com/#                                                               \tError: test')
+    expect(messages[0]).toEqual('status\tmethod\turl                                                                             \tcontentType     \t  ms\tparent                                                                          \terror')
+    expect(messages[1]).toEqual('200   \tGET   \thttp://test.com/#                                                               \ttext/html       \t 123\t                                                                                \t     ')
+    expect(messages[2]).toEqual('      \tGET   \thttp://test.com/2                                                               \t                \t 456\thttp://test.com/#                                                               \tError: test')
   })
 
   it('merges several redirects', async () => {
@@ -173,9 +173,9 @@ describe('TableFormatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages.length).to.eq(3)
+    expect(messages.length).toEqual(3)
     // tslint:disable-next-line: max-line-length
-    expect(messages[1]).to.deep.eq(`200   \tGET   \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t                                                                                \t     `)
-    expect(messages[2]).to.deep.eq(`204   \tGET   \t${'http://test.com/r1'.padEnd(80)}\ttext/html       \t 126\thttp://test.com/#                                                               \t     `)
+    expect(messages[1]).toEqual(`200   \tGET   \t${'http://test.com/#'.padEnd(80)}\ttext/html       \t 123\t                                                                                \t     `)
+    expect(messages[2]).toEqual(`204   \tGET   \t${'http://test.com/r1'.padEnd(80)}\ttext/html       \t 126\thttp://test.com/#                                                               \t     `)
   })
 })

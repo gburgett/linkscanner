@@ -1,8 +1,6 @@
 import {wait} from 'async-toolbox'
 import {onceAsync} from 'async-toolbox/events'
 import { collect, ParallelTransform, toReadable } from 'async-toolbox/stream'
-import { expect } from 'chai'
-import { } from 'mocha'
 
 import { Readable, Transform, Writable } from 'stream'
 import { EOF, handleEOF, isEOF, Reentry } from './reentry'
@@ -19,7 +17,7 @@ describe('Reentry', () => {
     instance.end()
 
     const chunks = await collect(instance)
-    expect(chunks).to.deep.eq([
+    expect(chunks).toEqual([
       { url: parseUrl('http://www.test.com') },
     ])
   })
@@ -31,7 +29,7 @@ describe('Reentry', () => {
     instance.end()
 
     const chunks = await collect(instance)
-    expect(chunks).to.deep.eq([
+    expect(chunks).toEqual([
       { url: parseUrl('http://www.test.com') },
     ])
   })
@@ -44,7 +42,7 @@ describe('Reentry', () => {
     instance.end()
 
     const chunks = await collect(instance)
-    expect(chunks).to.deep.eq([
+    expect(chunks).toEqual([
       { url: parseUrl('http://www.test.com') },
     ])
   })
@@ -58,7 +56,7 @@ describe('Reentry', () => {
     instance.end()
 
     const chunks = await collect(instance)
-    expect(chunks).to.deep.eq([
+    expect(chunks).toEqual([
       { url: parseUrl('http://www.test.com'), leaf: true },
       { url: parseUrl('http://www.test.com') },
     ])
@@ -72,8 +70,8 @@ describe('Reentry', () => {
       instance.end()
 
       const chunks = await collect(instance)
-      expect(chunks.length).to.eq(1)
-      expect(isEOF(chunks[0])).to.be.true
+      expect(chunks.length).toEqual(1)
+      expect(isEOF(chunks[0])).toBeTruthy()
     })
 
     it('ends if no new data written before receiving EOF', async () => {
@@ -94,8 +92,8 @@ describe('Reentry', () => {
       instance.tryEnd()
 
       await onceAsync(instance, 'end')
-      expect(collected.length).to.eq(2)
-      expect(collected[1]).to.eq(lastEOF)
+      expect(collected.length).toEqual(2)
+      expect(collected[1]).toEqual(lastEOF)
     })
 
     it('does not end if new data written after EOF', async () => {
@@ -122,10 +120,10 @@ describe('Reentry', () => {
       instance.tryEnd()
 
       await onceAsync(instance, 'end')
-      expect(collected.length).to.eq(4)
-      expect(collected[1]).to.eq(firstEOF)
-      expect(collected[2]).to.deep.eq({ url: parseUrl('http://www.test2.com')})
-      expect(isEOF(collected[3])).to.be.true
+      expect(collected.length).toEqual(4)
+      expect(collected[1]).toEqual(firstEOF)
+      expect(collected[2]).toEqual({ url: parseUrl('http://www.test2.com')})
+      expect(isEOF(collected[3])).toBeTruthy()
     })
 
     it('ends even when piped', async () => {
@@ -145,8 +143,8 @@ describe('Reentry', () => {
       result.on('data', (data) => {return})
 
       const collected = await collect(result)
-      expect(collected.length).to.eq(1)
-      expect(collected[0].url.toString()).to.eq('http://www.test.com/')
+      expect(collected.length).toEqual(1)
+      expect(collected[0].url.toString()).toEqual('http://www.test.com/')
     })
   })
 })

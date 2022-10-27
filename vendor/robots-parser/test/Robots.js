@@ -6,11 +6,11 @@ function testRobots(url, contents, allowed, disallowed) {
 	var robots = robotsParser(url, contents);
 
 	allowed.forEach(function (url) {
-		expect(robots.isAllowed(url)).to.equal(true);
+		expect(robots.isAllowed(url)).toEqual(true);
 	});
 
 	disallowed.forEach(function (url) {
-		expect(robots.isDisallowed(url)).to.equal(true);
+		expect(robots.isDisallowed(url)).toEqual(true);
 	});
 }
 
@@ -201,7 +201,7 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.isAllowed("http://www.example.com/fish", "agenta")).to.equal(false);
+		expect(robots.isAllowed("http://www.example.com/fish", "agenta")).toEqual(false);
 	});
 
 	it('should return undefined for invalid urls', function () {
@@ -222,7 +222,7 @@ describe('Robots', function () {
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
 		invalidUrls.forEach(function (url) {
-			expect(robots.isAllowed(url)).to.equal(undefined);
+			expect(robots.isAllowed(url)).toEqual(undefined);
 		});
 	});
 
@@ -349,15 +349,15 @@ describe('Robots', function () {
 		var robots = robotsParser('http://www.example.com/robots.txt', '');
 
 		allowed.forEach(function (url) {
-			expect(robots.isAllowed(url)).to.equal(true);
+			expect(robots.isAllowed(url)).toEqual(true);
 		});
 	});
 
 	it('should treat null as allowing all', function () {
 		var robots = robotsParser('http://www.example.com/robots.txt', null);
 
-		expect(robots.isAllowed("http://www.example.com/", "userAgent")).to.equal(true);
-		expect(robots.isAllowed("http://www.example.com/")).to.equal(true);
+		expect(robots.isAllowed("http://www.example.com/", "userAgent")).toEqual(true);
+		expect(robots.isAllowed("http://www.example.com/")).toEqual(true);
 	});
 
 	it('should handle invalid robots.txt urls', function () {
@@ -378,8 +378,8 @@ describe('Robots', function () {
 
 		sitemapUrls.forEach(function (url) {
 			var robots = robotsParser(url, contents);
-			expect(robots.isAllowed('http://www.example.com/index.html')).to.equal(undefined);
-			expect(robots.getPreferredHost()).to.equal('www.example.com');
+			expect(robots.isAllowed('http://www.example.com/index.html')).toEqual(undefined);
+			expect(robots.getPreferredHost()).toEqual('www.example.com');
 			expect(robots.getSitemaps()).to.eql(['/sitemap.xml']);
 		});
 	});
@@ -399,11 +399,11 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getCrawlDelay('a')).to.equal(1);
-		expect(robots.getCrawlDelay('b')).to.equal(undefined);
-		expect(robots.getCrawlDelay('c')).to.equal(10);
-		expect(robots.getCrawlDelay('d')).to.equal(10);
-		expect(robots.getCrawlDelay()).to.equal(undefined);
+		expect(robots.getCrawlDelay('a')).toEqual(1);
+		expect(robots.getCrawlDelay('b')).toEqual(undefined);
+		expect(robots.getCrawlDelay('c')).toEqual(10);
+		expect(robots.getCrawlDelay('d')).toEqual(10);
+		expect(robots.getCrawlDelay()).toEqual(undefined);
 	});
 
 	it('should ignore invalid crawl-delay directives', function () {
@@ -421,10 +421,10 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getCrawlDelay('a')).to.equal(undefined);
-		expect(robots.getCrawlDelay('b')).to.equal(undefined);
-		expect(robots.getCrawlDelay('c')).to.equal(undefined);
-		expect(robots.getCrawlDelay('d')).to.equal(undefined);
+		expect(robots.getCrawlDelay('a')).toEqual(undefined);
+		expect(robots.getCrawlDelay('b')).toEqual(undefined);
+		expect(robots.getCrawlDelay('c')).toEqual(undefined);
+		expect(robots.getCrawlDelay('d')).toEqual(undefined);
 	});
 
 	it('should parse the sitemap directive', function () {
@@ -463,7 +463,7 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getPreferredHost()).to.equal('example.com');
+		expect(robots.getPreferredHost()).toEqual('example.com');
 	});
 
 	it('should parse empty and invalid directives', function () {
@@ -500,7 +500,7 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getPreferredHost()).to.equal('example.com');
+		expect(robots.getPreferredHost()).toEqual('example.com');
 	});
 
 	it('should return null when there is no host directive', function () {
@@ -514,7 +514,7 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getPreferredHost()).to.equal(null);
+		expect(robots.getPreferredHost()).toEqual(null);
 	});
 
 	it('should fallback to * when a UA has no rules of its own', function () {
@@ -532,9 +532,9 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getCrawlDelay('should-fall-back')).to.equal(1);
-		expect(robots.getCrawlDelay('d')).to.equal(10);
-		expect(robots.getCrawlDelay('dd')).to.equal(1);
+		expect(robots.getCrawlDelay('should-fall-back')).toEqual(1);
+		expect(robots.getCrawlDelay('d')).toEqual(10);
+		expect(robots.getCrawlDelay('dd')).toEqual(1);
 	});
 
 	it('should not fallback to * when a UA has rules', function () {
@@ -548,7 +548,7 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getCrawlDelay('b')).to.equal(undefined);
+		expect(robots.getCrawlDelay('b')).toEqual(undefined);
 	});
 
 	it('should ignore version numbers in the UA string', function () {
@@ -566,10 +566,10 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getCrawlDelay('should-fall-back/1.0.0')).to.equal(1);
-		expect(robots.getCrawlDelay('d/12')).to.equal(10);
-		expect(robots.getCrawlDelay('dd / 0-32-3')).to.equal(1);
-		expect(robots.getCrawlDelay('b / 1.0')).to.equal(12);
+		expect(robots.getCrawlDelay('should-fall-back/1.0.0')).toEqual(1);
+		expect(robots.getCrawlDelay('d/12')).toEqual(10);
+		expect(robots.getCrawlDelay('dd / 0-32-3')).toEqual(1);
+		expect(robots.getCrawlDelay('b / 1.0')).toEqual(12);
 	});
 
 
@@ -594,16 +594,16 @@ describe('Robots', function () {
 
 		var robots = robotsParser('http://www.example.com/robots.txt', contents);
 
-		expect(robots.getMatchingLineNumber('http://www.example.com/fish')).to.equal(-1);
-		expect(robots.getMatchingLineNumber('http://www.example.com/fish/test.html')).to.equal(6);
-		expect(robots.getMatchingLineNumber('http://www.example.com/Test.html')).to.equal(-1);
+		expect(robots.getMatchingLineNumber('http://www.example.com/fish')).toEqual(-1);
+		expect(robots.getMatchingLineNumber('http://www.example.com/fish/test.html')).toEqual(6);
+		expect(robots.getMatchingLineNumber('http://www.example.com/Test.html')).toEqual(-1);
 
-		expect(robots.getMatchingLineNumber('http://www.example.com/fish/index.php')).to.equal(4);
-		expect(robots.getMatchingLineNumber('http://www.example.com/fish/')).to.equal(4);
-		expect(robots.getMatchingLineNumber('http://www.example.com/test.html')).to.equal(5);
+		expect(robots.getMatchingLineNumber('http://www.example.com/fish/index.php')).toEqual(4);
+		expect(robots.getMatchingLineNumber('http://www.example.com/fish/')).toEqual(4);
+		expect(robots.getMatchingLineNumber('http://www.example.com/test.html')).toEqual(5);
 
-		expect(robots.getMatchingLineNumber('http://www.example.com/test.html', 'a')).to.equal(10);
-		expect(robots.getMatchingLineNumber('http://www.example.com/test.html', 'b')).to.equal(14);
+		expect(robots.getMatchingLineNumber('http://www.example.com/test.html', 'a')).toEqual(10);
+		expect(robots.getMatchingLineNumber('http://www.example.com/test.html', 'b')).toEqual(14);
 	});
 });
 

@@ -1,9 +1,7 @@
-import { expect } from 'chai'
-import { Response } from 'cross-fetch'
-import fetchMock from 'fetch-mock'
-import {} from 'mocha'
 
-import { URL } from '../url'
+import { Request } from 'cross-fetch'
+import fetchMock from 'fetch-mock'
+
 import { JsonParser } from './json-parser'
 
 describe('JsonParser', () => {
@@ -20,7 +18,7 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.map((r) => r.toString())).to.deep.eq([
+    expect(results.map((r) => r.toString())).toEqual([
       'https://google.com/',
     ])
   })
@@ -37,7 +35,7 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.map((r) => r.toString())).to.deep.eq([
+    expect(results.map((r) => r.toString())).toEqual([
       'https://some-json.com/other-path',
     ])
   })
@@ -54,7 +52,7 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.map((r) => r.toString())).to.deep.eq([
+    expect(results.map((r) => r.toString())).toEqual([
       'https://images.ctfassets.net/asdf.png',
     ])
   })
@@ -71,7 +69,7 @@ describe('JsonParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.map((r) => r.toString())).to.deep.eq([
+    expect(results.map((r) => r.toString())).toEqual([
       'http://images.ctfassets.net/asdf.png',
     ])
   })
@@ -103,7 +101,7 @@ describe('JsonParser', () => {
 
     // order doesn't matter in these results
     const sorted = results.map((r) => r.toString()).sort()
-    expect(sorted).to.deep.eq([
+    expect(sorted).toEqual([
       'https://some-json.com/some-other-rel-link',
       'https://some-json.com/some-rel-link',
       'https://some-json.com/some-third-link',
@@ -162,7 +160,7 @@ describe('JsonParser', () => {
 
     // order doesn't matter in these results
     const sorted = results.map((r) => r.toString()).sort()
-    expect(sorted).to.deep.eq([
+    expect(sorted).toEqual([
       'https://di0v2frwtdqnv.cloudfront.net/api/v1/blog/mentoring-during-covid/2fe48e32b5a5e179b2222281bdb24d2315a65d34.json',
       'https://di0v2frwtdqnv.cloudfront.net/api/v1/property/paper_signs/blog/1/f0fd7e9fb40c3e84770bd2bbc8b510780eb3e2d1.json',
       'https://di0v2frwtdqnv.cloudfront.net/api/v1/property/paper_signs/blog/18/66463ba9bb407cc00c3b1c922deca6d8537f3d10.json',
