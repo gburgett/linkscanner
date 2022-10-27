@@ -1,6 +1,14 @@
 {
   "presets": [
-    "@babel/preset-env",
+    [
+      // https://babeljs.io/docs/en/babel-preset-env#browserslist-integration
+      "@babel/preset-env",
+      {
+        // https://babeljs.io/docs/en/babel-preset-env#usebuiltins
+        "useBuiltIns": "usage",
+        "corejs": 3
+      }
+    ],
     "@babel/preset-typescript"
   ],
   "plugins": [

@@ -27,7 +27,7 @@
     "build": "tsc",
     "check-types": "tsc --noemit",
     "prepublishOnly": "npm run build",
-    "clean": "rm -rf dist; bash -c 'shopt -s globstar; rm src/**/*.js src/**/*.map src/**/*.d.ts'; true"
+    "clean": "rm -rf dist; tsc --build --clean; tsc --project tsconfig.test.json --build --clean;; true"
   },
   "keywords": [
     "linkchecker",
@@ -45,6 +45,7 @@
     "@babel/polyfill": "^7.2.5",
     "@babel/preset-env": "^7.3.1",
     "@babel/preset-typescript": "^7.3.3",
+    "@babel/register": "^7.18.9",
     "@types/chai": "^4.1.7",
     "@types/chalk": "^2.2.0",
     "@types/cheerio": "^0.22.11",
@@ -56,6 +57,7 @@
     "awesome-ts-loader": "^1.3.1",
     "babel-loader": "^8.0.5",
     "chai": "^4.2.0",
+    "core-js": "^3.26.0",
     "coveralls": "^3.0.3",
     "express": "^4.17.1",
     "fetch-mock": "^9.3.1",
