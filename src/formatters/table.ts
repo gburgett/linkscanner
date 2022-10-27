@@ -58,7 +58,7 @@ export class TableFormatter extends Writable {
     if (!verbose) {
       if (isSuccessResult(result)) {
         if (!result.leaf && [301, 302, 307].includes(result.status)) {
-            // don't log non-leaf redirects unless verbose
+          // don't log non-leaf redirects unless verbose
           return
         }
 

@@ -183,8 +183,8 @@ export class ConsoleFormatter extends Writable {
           chalk.dim(`\t${linkCount.toFixed(0)} links found. ${excludedResults.length.toFixed(0)} not checked. `) +
             (brokenResults.length == 0 ?
               (successResults.length > 0 ? chalk.green(`0 broken.`) : '') :
-                chalk.red(`${brokenResults.length} broken.`)),
-        )
+              chalk.red(`${brokenResults.length} broken.`)),
+      )
     }
 
     /**

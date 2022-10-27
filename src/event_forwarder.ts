@@ -53,6 +53,7 @@ export class EventForwarder {
 
     addMethods.forEach((methodName) => {
       const oldMethod = emitter[methodName]
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this
       emitter[methodName] = function(event: string | symbol, listener: (...args: any[]) => void) {
         const ignore = self._options.ignore && self._options.ignore.has(event)

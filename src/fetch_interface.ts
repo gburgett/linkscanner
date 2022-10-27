@@ -46,7 +46,7 @@ export class FetchInterfaceWrapper implements FetchInterface {
           interval: maxConcurrency.interval,
         })
 
-      // tslint:disable-next-line: max-classes-per-file
+    // tslint:disable-next-line: max-classes-per-file
     this.Request = class {
       constructor(url: string, requestInit?: RequestInit) {
         // add in the headers inside the request constructor call

@@ -141,7 +141,7 @@ export function BuildPipeline(
   source
     .pipe(urlParser)
     .pipe(sourceUrlTracker)
-      // reentry is responsible for ending itself when the EOF handler sends the EOF back
+  // reentry is responsible for ending itself when the EOF handler sends the EOF back
     .pipe(reentry, { end: false })
     .pipe(fetcher)
     .pipe(eofHandler)

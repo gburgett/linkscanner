@@ -55,7 +55,7 @@ export const defaultParsers = (options?: Options<ParserOptions & { only: string[
         return
       }
       // text/html => html, application/vnd.blah+json => json
-      const lastPart = key.split(/[\/\+]/).filter((p) => p.length > 0).pop()
+      const lastPart = key.split(/[/+]/).filter((p) => p.length > 0).pop()
       if (lastPart && only.includes(lastPart)) {
         return
       }
