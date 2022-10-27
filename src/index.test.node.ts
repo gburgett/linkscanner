@@ -1,8 +1,7 @@
 import { collect } from 'async-toolbox/stream'
-import { expect } from 'chai'
+
 import express, { Express } from 'express'
 import { Server } from 'http'
-import { } from 'mocha'
 
 import Linkscanner, { Args } from './index'
 import { Result, SuccessResult } from './model'
@@ -46,9 +45,9 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('localhost')
-    expect(result[0].url.toString()).to.eq('http://localhost:9876/testpage')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].host).toEqual('localhost')
+    expect(result[0].url.toString()).toEqual('http://localhost:9876/testpage')
   })
 
   it('recurses into other URLs found on page', async () => {
@@ -68,12 +67,12 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('localhost')
-    expect(result[0].url.toString()).to.eq('http://localhost:9876/testpage')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].host).toEqual('localhost')
+    expect(result[0].url.toString()).toEqual('http://localhost:9876/testpage')
 
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('localhost')
-    expect(result[1].url.toString()).to.eq('http://localhost:9876/otherpage')
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('localhost')
+    expect(result[1].url.toString()).toEqual('http://localhost:9876/otherpage')
   })
 })

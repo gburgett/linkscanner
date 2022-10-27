@@ -1,8 +1,7 @@
 import { onceAsync } from 'async-toolbox/events'
 import { collect, toReadable } from 'async-toolbox/stream'
-import { expect } from 'chai'
+
 import fetchMock from 'fetch-mock'
-import { } from 'mocha'
 
 import { BuildPipeline, BuildPipelineOptions } from './build_pipeline'
 import { Result, SuccessResult } from './model'
@@ -49,9 +48,9 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('test.com')
-    expect(result[0].url.toString()).to.eq('http://test.com/testpage')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].host).toEqual('test.com')
+    expect(result[0].url.toString()).toEqual('http://test.com/testpage')
   })
 
   it('recurses into other URLs found on page', async () => {
@@ -72,11 +71,11 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(2)
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('other.com')
-    expect(result[1].url.toString()).to.eq('http://other.com/')
-    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
+    expect(result.length).toEqual(2)
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('other.com')
+    expect(result[1].url.toString()).toEqual('http://other.com/')
+    expect(result[1].parent!.url.toString()).toEqual('http://test.com/testpage')
   })
 
   it('deep recurses for same host', async () => {
@@ -111,21 +110,21 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(3)
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('test.com')
-    expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
-    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage/')
+    expect(result.length).toEqual(3)
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('test.com')
+    expect(result[1].url.toString()).toEqual('http://test.com/testpage/relative/link')
+    expect(result[1].parent!.url.toString()).toEqual('http://test.com/testpage/')
 
-    expect((result[2] as SuccessResult).status).to.eq(200)
-    expect(result[2].host).to.eq('other.com')
-    expect(result[2].url.toString()).to.eq('http://other.com/')
-    expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage/relative/link')
+    expect((result[2] as SuccessResult).status).toEqual(200)
+    expect(result[2].host).toEqual('other.com')
+    expect(result[2].url.toString()).toEqual('http://other.com/')
+    expect(result[2].parent!.url.toString()).toEqual('http://test.com/testpage/relative/link')
 
-    expect(urls[0].url.toString()).to.equal('http://test.com/testpage/')
-    expect(urls[1].url.toString()).to.equal('http://test.com/testpage/relative/link')
-    expect(urls[2].url.toString()).to.equal('http://other.com/')
-    expect(urls.length).to.eq(3)
+    expect(urls[0].url.toString()).toEqual('http://test.com/testpage/')
+    expect(urls[1].url.toString()).toEqual('http://test.com/testpage/relative/link')
+    expect(urls[2].url.toString()).toEqual('http://other.com/')
+    expect(urls.length).toEqual(3)
   })
 
   it('does not deep recurse when recursive: false', async () => {
@@ -157,9 +156,9 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(2)
-    expect(result[0].url.toString()).to.eq('http://test.com/testpage/')
-    expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
+    expect(result.length).toEqual(2)
+    expect(result[0].url.toString()).toEqual('http://test.com/testpage/')
+    expect(result[1].url.toString()).toEqual('http://test.com/testpage/relative/link')
   })
 
   it('Heads same-host URLs on recursive page when recursive: 2', async () => {
@@ -191,16 +190,16 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(3)
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('test.com')
-    expect(result[1].url.toString()).to.eq('http://test.com/testpage/relative/link')
-    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage/')
+    expect(result.length).toEqual(3)
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('test.com')
+    expect(result[1].url.toString()).toEqual('http://test.com/testpage/relative/link')
+    expect(result[1].parent!.url.toString()).toEqual('http://test.com/testpage/')
 
-    expect((result[2] as SuccessResult).status).to.eq(200)
-    expect(result[2].host).to.eq('test.com')
-    expect(result[2].url.toString()).to.eq('http://test.com/testpage2')
-    expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage/relative/link')
+    expect((result[2] as SuccessResult).status).toEqual(200)
+    expect(result[2].host).toEqual('test.com')
+    expect(result[2].url.toString()).toEqual('http://test.com/testpage2')
+    expect(result[2].parent!.url.toString()).toEqual('http://test.com/testpage/relative/link')
   })
 
   it('Heads same-host URLs found on page when recursive: 1', async () => {
@@ -224,11 +223,11 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(2)
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('test.com')
-    expect(result[1].url.toString()).to.eq('http://test.com/testpage2')
-    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
+    expect(result.length).toEqual(2)
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('test.com')
+    expect(result[1].url.toString()).toEqual('http://test.com/testpage2')
+    expect(result[1].parent!.url.toString()).toEqual('http://test.com/testpage')
   })
 
   it('Heads same-host images and PDFs found on page', async () => {
@@ -256,17 +255,17 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(3)
+    expect(result.length).toEqual(3)
 
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('test.com')
-    expect(result[1].url.toString()).to.eq('http://test.com/testpdf.pdf')
-    expect(result[1].parent!.url.toString()).to.eq('http://test.com/testpage')
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('test.com')
+    expect(result[1].url.toString()).toEqual('http://test.com/testpdf.pdf')
+    expect(result[1].parent!.url.toString()).toEqual('http://test.com/testpage')
 
-    expect((result[2] as SuccessResult).status).to.eq(200)
-    expect(result[2].host).to.eq('test.com')
-    expect(result[2].url.toString()).to.eq('http://test.com/testimg.png')
-    expect(result[2].parent!.url.toString()).to.eq('http://test.com/testpage')
+    expect((result[2] as SuccessResult).status).toEqual(200)
+    expect(result[2].host).toEqual('test.com')
+    expect(result[2].url.toString()).toEqual('http://test.com/testimg.png')
+    expect(result[2].parent!.url.toString()).toEqual('http://test.com/testpage')
   })
 
   it('does not simple recurse when recursive: 0 and forceGet', async () => {
@@ -293,12 +292,12 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(1)
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].url.toString()).to.eq('http://test.com/testpage')
+    expect(result.length).toEqual(1)
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].url.toString()).toEqual('http://test.com/testpage')
 
-    expect(urls[0].url.toString()).to.equal('http://test.com/testpage')
-    expect(urls.length).to.eq(1)
+    expect(urls[0].url.toString()).toEqual('http://test.com/testpage')
+    expect(urls.length).toEqual(1)
   })
 
   it('HEADs a source URL when recursive: 0', async () => {
@@ -323,12 +322,12 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(1)
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].url.toString()).to.eq('http://test.com/testpage')
+    expect(result.length).toEqual(1)
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].url.toString()).toEqual('http://test.com/testpage')
 
-    expect(urls[0].url.toString()).to.equal('http://test.com/testpage')
-    expect(urls.length).to.eq(1)
+    expect(urls[0].url.toString()).toEqual('http://test.com/testpage')
+    expect(urls.length).toEqual(1)
   })
 
   it('skips disallowed URLs', async () => {
@@ -351,10 +350,10 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(2)
-    expect(result[0].url.toString()).to.eq('http://test.com/testpage/')
-    expect(result[1].url.toString()).to.eq('http://other.com/disallowed/index.php')
-    expect(result[1].type).to.eq('skip')
+    expect(result.length).toEqual(2)
+    expect(result[0].url.toString()).toEqual('http://test.com/testpage/')
+    expect(result[1].url.toString()).toEqual('http://other.com/disallowed/index.php')
+    expect(result[1].type).toEqual('skip')
   })
 
   it('emits URL events on resulting stream', async () => {
@@ -382,9 +381,9 @@ Allow: *`)
     uut.on('data', () => {return})
     await onceAsync(uut, 'end')
 
-    expect(urls.length).to.eq(2)
-    expect(urls[0].url.toString()).to.eq('http://test.com/testpage')
-    expect(urls[1].url.toString()).to.eq('http://other.com/')
+    expect(urls.length).toEqual(2)
+    expect(urls[0].url.toString()).toEqual('http://test.com/testpage')
+    expect(urls[1].url.toString()).toEqual('http://other.com/')
   })
 
   it('emits fetch events on resulting stream', async () => {
@@ -412,9 +411,9 @@ Allow: *`)
     uut.on('data', () => {return})
     await onceAsync(uut, 'end')
 
-    expect(urls.length).to.eq(2)
-    expect(urls[0].url.toString()).to.eq('http://test.com/testpage')
-    expect(urls[1].url.toString()).to.eq('http://other.com/')
+    expect(urls.length).toEqual(2)
+    expect(urls[0].url.toString()).toEqual('http://test.com/testpage')
+    expect(urls[1].url.toString()).toEqual('http://other.com/')
   })
 
   it('forwards errors to the results stream', async () => {
@@ -439,11 +438,11 @@ Allow: *`)
     }
 
     const expectedMsg = 'Unable to parse URL \'some invalid URL\''
-    expect(err).to.not.be.undefined
-    expect(err.message).to.include(expectedMsg)
+    expect(err).toBeTruthy()
+    expect(err.message).toContain(expectedMsg)
 
-    expect(errors.length).to.eq(1)
-    expect(errors[0].message).to.include(expectedMsg)
+    expect(errors.length).toEqual(1)
+    expect(errors[0].message).toContain(expectedMsg)
   })
 
   it('doesnt scan HTML when --only=json', async () => {
@@ -464,9 +463,9 @@ Allow: *`)
     // act
     const result: Result[] = await collect(uut)
 
-    expect(result.length).to.equal(2)
-    expect(result[0].url.toString()).to.eq('http://test.com/testapi.json')
-    expect(result[1].url.toString()).to.eq('http://test.com/testpage.htm')
-    expect((result[1] as SuccessResult).method).to.eq('HEAD')
+    expect(result.length).toEqual(2)
+    expect(result[0].url.toString()).toEqual('http://test.com/testapi.json')
+    expect(result[1].url.toString()).toEqual('http://test.com/testpage.htm')
+    expect((result[1] as SuccessResult).method).toEqual('HEAD')
   })
 })

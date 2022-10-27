@@ -1,5 +1,3 @@
-import { expect } from 'chai'
-import {} from 'mocha'
 
 import { } from 'async-toolbox/stream'
 import { Logger } from '../logger'
@@ -35,8 +33,8 @@ describe('WriteOut formatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages[0]).to.eq('test 200\t123\ttext/html')
-    expect(messages.length).to.eq(1)
+    expect(messages[0]).toEqual('test 200\t123\ttext/html')
+    expect(messages.length).toEqual(1)
   })
 
   it('merges several redirects', async () => {
@@ -87,9 +85,9 @@ describe('WriteOut formatter', () => {
 
     // assert
     // tslint:disable-next-line: max-line-length
-    expect(messages[0]).to.deep.eq(`200 http://test.com/# ==> 200 http://test.com/# (0 123ms)`)
-    expect(messages[1]).to.deep.eq(`301 http://test.com/r1 ==> 204 http://test.com/final (3 126ms)`)
-    expect(messages.length).to.eq(2)
+    expect(messages[0]).toEqual(`200 http://test.com/# ==> 200 http://test.com/# (0 123ms)`)
+    expect(messages[1]).toEqual(`301 http://test.com/r1 ==> 204 http://test.com/final (3 126ms)`)
+    expect(messages.length).toEqual(2)
   })
 
   it('ignores skip results', async () => {
@@ -113,7 +111,7 @@ describe('WriteOut formatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages.length).to.eq(0)
+    expect(messages.length).toEqual(0)
   })
 
   it('writes error results', async () => {
@@ -140,8 +138,8 @@ describe('WriteOut formatter', () => {
     await instance.endAsync()
 
     // assert
-    expect(messages[0]).to.eq('\terror\tTest Error!')
-    expect(messages.length).to.eq(1)
+    expect(messages[0]).toEqual('\terror\tTest Error!')
+    expect(messages.length).toEqual(1)
   })
 
   it('does not orphan redirects where we already hit the destination', async () => {
@@ -175,8 +173,8 @@ describe('WriteOut formatter', () => {
     redirects.forEach((r) => instance.write(r))
     await instance.endAsync()
 
-    expect(messages[0]).to.deep.eq(`200 http://test.com/some-page ==> 200 http://test.com/some-page (0 123ms)`)
-    expect(messages[1]).to.deep.eq(`301 http://test.com/r1 ==> 200 http://test.com/some-page (1 124ms)`)
-    expect(messages.length).to.eq(2)
+    expect(messages[0]).toEqual(`200 http://test.com/some-page ==> 200 http://test.com/some-page (0 123ms)`)
+    expect(messages[1]).toEqual(`301 http://test.com/r1 ==> 200 http://test.com/some-page (1 124ms)`)
+    expect(messages.length).toEqual(2)
   })
 })

@@ -1,7 +1,5 @@
-import { expect } from 'chai'
-import { Response } from 'cross-fetch'
-import {} from 'mocha'
-import { URL } from '../url'
+
+import { Request, Response } from 'cross-fetch'
 
 import { CheerioParser } from './cheerio-parser'
 
@@ -14,8 +12,8 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://google.com/')
+    expect(results.length).toEqual(1)
+    expect(results[0].toString()).toEqual('https://google.com/')
   })
 
   it('finds all relative and non-relative URLs in google homepage', async () => {
@@ -26,9 +24,9 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(19)
-    expect(results[0].toString()).to.eq('http://www.google.com/imghp?hl=en&tab=wi')
-    expect(results[18].toString()).to.eq('https://google.com/intl/en/policies/terms/')
+    expect(results.length).toEqual(19)
+    expect(results[0].toString()).toEqual('http://www.google.com/imghp?hl=en&tab=wi')
+    expect(results[18].toString()).toEqual('https://google.com/intl/en/policies/terms/')
   })
 
   it('finds canonical link', async () => {
@@ -45,8 +43,8 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://www.google.com/canonical')
+    expect(results.length).toEqual(1)
+    expect(results[0].toString()).toEqual('https://www.google.com/canonical')
   })
 
   it('respects base element', async () => {
@@ -67,9 +65,9 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(2)
-    expect(results[0].toString()).to.eq('https://other.com/some/root/url')
-    expect(results[1].toString()).to.eq('https://other.com/test/some/relative/url')
+    expect(results.length).toEqual(2)
+    expect(results[0].toString()).toEqual('https://other.com/some/root/url')
+    expect(results[1].toString()).toEqual('https://other.com/test/some/relative/url')
   })
 
   it('handles relative base element', async () => {
@@ -90,9 +88,9 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(2)
-    expect(results[0].toString()).to.eq('https://google.com/some/root/url')
-    expect(results[1].toString()).to.eq('https://google.com/test/some/relative/url')
+    expect(results.length).toEqual(2)
+    expect(results[0].toString()).toEqual('https://google.com/some/root/url')
+    expect(results[1].toString()).toEqual('https://google.com/test/some/relative/url')
   })
 
   it('handles protocol relative URLs', async () => {
@@ -103,8 +101,8 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://images.ctfassets.net/asdf.png')
+    expect(results.length).toEqual(1)
+    expect(results[0].toString()).toEqual('https://images.ctfassets.net/asdf.png')
   })
 
   it('ignores css & images with default options', async () => {
@@ -125,7 +123,7 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(0)
+    expect(results.length).toEqual(0)
   })
 
   it('includes css & images with "all" option', async () => {
@@ -148,10 +146,10 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(3)
-    expect(results[0].toString()).to.eq('https://google.com/assets/application.css')
-    expect(results[1].toString()).to.eq('https://images.ctfassets.net/test.jpg?w=1440')
-    expect(results[2].toString()).to.eq('https://google.com/js/application.js')
+    expect(results.length).toEqual(3)
+    expect(results[0].toString()).toEqual('https://google.com/assets/application.css')
+    expect(results[1].toString()).toEqual('https://images.ctfassets.net/test.jpg?w=1440')
+    expect(results[2].toString()).toEqual('https://google.com/js/application.js')
   })
 
   it('includes all elements whenever selector given', async () => {
@@ -178,14 +176,14 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(7)
-    expect(results[0].toString()).to.eq('https://google.com/other')
-    expect(results[1].toString()).to.eq('https://www.google.com/canonical')
-    expect(results[2].toString()).to.eq('https://google.com/assets/application.css')
-    expect(results[3].toString()).to.eq('https://images.ctfassets.net/test.jpg?w=1440')
-    expect(results[4].toString()).to.eq('https://google.com/js/application.js')
-    expect(results[5].toString()).to.eq('https://google.com/post-me')
-    expect(results[6].toString()).to.eq('http://some-iframe.test.com/')
+    expect(results.length).toEqual(7)
+    expect(results[0].toString()).toEqual('https://google.com/other')
+    expect(results[1].toString()).toEqual('https://www.google.com/canonical')
+    expect(results[2].toString()).toEqual('https://google.com/assets/application.css')
+    expect(results[3].toString()).toEqual('https://images.ctfassets.net/test.jpg?w=1440')
+    expect(results[4].toString()).toEqual('https://google.com/js/application.js')
+    expect(results[5].toString()).toEqual('https://google.com/post-me')
+    expect(results[6].toString()).toEqual('http://some-iframe.test.com/')
   })
 
   it('scans data-href attributes too', async () => {
@@ -204,8 +202,8 @@ describe('CheerioParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('http://test.com/')
+    expect(results.length).toEqual(1)
+    expect(results[0].toString()).toEqual('http://test.com/')
   })
 })
 

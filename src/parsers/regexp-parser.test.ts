@@ -1,7 +1,5 @@
-import { expect } from 'chai'
-import { Response } from 'cross-fetch'
-import {} from 'mocha'
-import { URL } from '../url'
+
+import { Request, Response } from 'cross-fetch'
 
 import { RegexpParser } from './regexp-parser'
 
@@ -14,8 +12,8 @@ describe('RegexpParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(1)
-    expect(results[0].toString()).to.eq('https://google.com/')
+    expect(results.length).toEqual(1)
+    expect(results[0].toString()).toEqual('https://google.com/')
   })
 
   it('finds all URLs in google homepage', async () => {
@@ -26,9 +24,9 @@ describe('RegexpParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(12)
-    expect(results[0].toString()).to.eq('http://schema.org/WebPage')
-    expect(results[11].toString()).to.eq('https://www.google.com/url?q=https://economicimpact.google.com/reports/' +
+    expect(results.length).toEqual(12)
+    expect(results[0].toString()).toEqual('http://schema.org/WebPage')
+    expect(results[11].toString()).toEqual('https://www.google.com/url?q=https://economicimpact.google.com/reports/' +
       'tx%3Futm_source%3Dgoogle%26utm_medium%3Dhp%26utm_campaign%3Dlaunch&amp;source=hpp&amp;id=19012225&amp;' +
       'ct=3&amp;usg=AFQjCNE1KJ_SvY3fYav4Fcu8Y5rwMZ-dGg&amp;sa=X&amp;ved=0ahUKEwiAyeb0t6PiAhVBX60KHXyuCcQQ8IcBCAU')
   })
@@ -47,9 +45,9 @@ describe('RegexpParser', () => {
     const results: URL[] = []
     await parser.parse(resp, req, (result) => results.push(result))
 
-    expect(results.length).to.eq(3)
-    expect(results[0].toString()).to.eq('http://www.sitemaps.org/schemas/sitemap/0.9')
-    expect(results[2].toString()).to.eq('http://www.google.com/')
+    expect(results.length).toEqual(3)
+    expect(results[0].toString()).toEqual('http://www.sitemaps.org/schemas/sitemap/0.9')
+    expect(results[2].toString()).toEqual('http://www.google.com/')
 
   })
 })

@@ -1,8 +1,7 @@
 import { wait } from 'async-toolbox'
 import { collect } from 'async-toolbox/stream'
-import { expect } from 'chai'
+
 import fetchMock from 'fetch-mock'
-import { } from 'mocha'
 
 import { FetchInterfaceWrapper } from './fetch_interface'
 import { Fetcher, FetchOptions } from './fetcher'
@@ -43,11 +42,11 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as ErrorResult).error).to.be.undefined
-    expect(result[0].type).to.eq('success')
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('github.com')
-    expect(result[0].url.toString()).to.eq('https://github.com/gburgett/linkscanner')
+    expect((result[0] as ErrorResult).error).toBeFalsy()
+    expect(result[0].type).toEqual('success')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].host).toEqual('github.com')
+    expect(result[0].url.toString()).toEqual('https://github.com/gburgett/linkscanner')
   })
 
   it('performs a HEAD request when the node is a leaf', async () => {
@@ -60,11 +59,11 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect((result[0] as SuccessResult).method).to.eq('HEAD')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect((result[0] as SuccessResult).method).toEqual('HEAD')
 
     const call = fetchMockSandbox.lastCall(/other\.com/)!
-    expect(call[1]!.method).to.eq('HEAD')
+    expect(call[1]!.method).toEqual('HEAD')
   })
 
   it('performs a GET request when the node is a leaf and forceGet is true', async () => {
@@ -77,11 +76,11 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect((result[0] as SuccessResult).method).to.eq('GET')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect((result[0] as SuccessResult).method).toEqual('GET')
 
     const call = fetchMockSandbox.lastCall(/other\.com/)!
-    expect(call[1]!.method).to.eq('GET')
+    expect(call[1]!.method).toEqual('GET')
   })
 
   it('retries as a GET when the HEAD response is 405', async () => {
@@ -95,14 +94,14 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect(result[0].type).to.eq('success')
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('other.com')
-    expect(result[0].url.toString()).to.eq('http://other.com/')
+    expect(result[0].type).toEqual('success')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].host).toEqual('other.com')
+    expect(result[0].url.toString()).toEqual('http://other.com/')
 
     const calls = fetchMockSandbox.calls(/other\.com/)!
-    expect(calls[0][1]!.method).to.eq('HEAD')
-    expect(calls[1][1]!.method).to.eq('GET')
+    expect(calls[0][1]!.method).toEqual('HEAD')
+    expect(calls[1][1]!.method).toEqual('GET')
   })
 
   it('does not parse body when a leaf 405 is retried as a GET', async () => {
@@ -125,7 +124,7 @@ describe('Fetcher', () => {
     await uut.endAsync()
     await collect(uut)
 
-    expect(emitted.length).to.eq(0)
+    expect(emitted.length).toEqual(0)
   })
 
   it('follows redirects', async () => {
@@ -147,16 +146,16 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as ErrorResult).error).to.be.undefined
-    expect((result[0] as SuccessResult).status).to.eq(307)
-    expect(result[0].host).to.eq('other.com')
-    expect(result[0].url.toString()).to.eq('http://other.com/')
-    expect(result[0].leaf).to.be.false
+    expect((result[0] as ErrorResult).error).toBeFalsy()
+    expect((result[0] as SuccessResult).status).toEqual(307)
+    expect(result[0].host).toEqual('other.com')
+    expect(result[0].url.toString()).toEqual('http://other.com/')
+    expect(result[0].leaf).toBeFalsy()
 
-    expect((result[1] as SuccessResult).status).to.eq(200)
-    expect(result[1].host).to.eq('www.other.com')
-    expect(result[1].url.toString()).to.eq('http://www.other.com/')
-    expect(result[1].parent).to.eq(result[0])
+    expect((result[1] as SuccessResult).status).toEqual(200)
+    expect(result[1].host).toEqual('www.other.com')
+    expect(result[1].url.toString()).toEqual('http://www.other.com/')
+    expect(result[1].parent).toEqual(result[0])
   })
 
   it('pushes an error result when fetch throws', async () => {
@@ -170,10 +169,10 @@ describe('Fetcher', () => {
     const result: Result[] = await collect(uut)
 
     const r0 = result[0] as ErrorResult
-    expect(r0.status).to.be.undefined
-    expect(r0.reason).to.eq('error')
-    expect(r0.host).to.eq('other.com')
-    expect(r0.url.toString()).to.eq('http://other.com/')
+    expect(r0.status).toBeFalsy()
+    expect(r0.reason).toEqual('error')
+    expect(r0.host).toEqual('other.com')
+    expect(r0.url.toString()).toEqual('http://other.com/')
   })
 
   it('pushes a timeout result', async () => {
@@ -194,10 +193,10 @@ describe('Fetcher', () => {
     const result: Result[] = await collect(uut)
 
     const r0 = result[0] as ErrorResult
-    expect(r0.status).to.be.undefined
-    expect(r0.reason).to.eq('timeout')
-    expect(r0.host).to.eq('other.com')
-    expect(r0.url.toString()).to.eq('http://other.com/')
+    expect(r0.status).toBeFalsy()
+    expect(r0.reason).toEqual('timeout')
+    expect(r0.host).toEqual('other.com')
+    expect(r0.url.toString()).toEqual('http://other.com/')
   })
 
   it('detects an infinite redirect', async () => {
@@ -224,16 +223,16 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as ErrorResult).error).to.be.undefined
-    expect((result[0] as SuccessResult).status).to.eq(302)
-    expect(result[0].host).to.eq('other.com')
-    expect(result[0].url.toString()).to.eq('http://other.com/1')
-    expect(result[0].leaf).to.be.false
+    expect((result[0] as ErrorResult).error).toBeFalsy()
+    expect((result[0] as SuccessResult).status).toEqual(302)
+    expect(result[0].host).toEqual('other.com')
+    expect(result[0].url.toString()).toEqual('http://other.com/1')
+    expect(result[0].leaf).toBeFalsy()
 
-    expect((result[1] as ErrorResult).reason).to.eq('redirect-loop')
-    expect(result[1].host).to.eq('other.com')
-    expect(result[1].url.toString()).to.eq('http://other.com/2')
-    expect(result[1].parent).to.eq(result[0])
+    expect((result[1] as ErrorResult).reason).toEqual('redirect-loop')
+    expect(result[1].host).toEqual('other.com')
+    expect(result[1].url.toString()).toEqual('http://other.com/2')
+    expect(result[1].parent).toEqual(result[0])
   })
 
   it('does not attempt to scan a media item', async () => {
@@ -258,10 +257,10 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect(result[0].type).to.eq('success')
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect(result[0].host).to.eq('other.com')
-    expect(result[0].url.toString()).to.eq('http://other.com/some-video')
+    expect(result[0].type).toEqual('success')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect(result[0].host).toEqual('other.com')
+    expect(result[0].url.toString()).toEqual('http://other.com/some-video')
   })
 
   it('sets referrer header', async () => {
@@ -286,12 +285,12 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect((result[0] as SuccessResult).method).to.eq('GET')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect((result[0] as SuccessResult).method).toEqual('GET')
 
     const call = fetchMockSandbox.lastCall(/other\.com/)!
     const headers = call[1]!.headers as any
-    expect(headers.Referer).to.deep.eq(['http://parent-url.com/'])
+    expect(headers.Referer).toEqual(['http://parent-url.com/'])
   })
 
   it('does not set referrer when downgrading from HTTPS', async () => {
@@ -311,12 +310,12 @@ describe('Fetcher', () => {
     await uut.endAsync()
     const result: Result[] = await collect(uut)
 
-    expect((result[0] as SuccessResult).status).to.eq(200)
-    expect((result[0] as SuccessResult).method).to.eq('GET')
+    expect((result[0] as SuccessResult).status).toEqual(200)
+    expect((result[0] as SuccessResult).method).toEqual('GET')
 
     const call = fetchMockSandbox.lastCall(/other\.com/)!
     const headers = call[1]!.headers as any
-    expect(headers.Referer).to.be.undefined
+    expect(headers.Referer).toBeFalsy()
 
   })
 })

@@ -1,6 +1,4 @@
 import {} from 'async-toolbox/events'
-import { expect } from 'chai'
-import {} from 'mocha'
 
 import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
@@ -42,13 +40,13 @@ describe('ConsoleFormatter', () => {
 
     await instance.onceAsync('finish')
 
-    expect(messages.length).to.eq(1)
-    expect(messages[0]).to.include('200')
-    expect(messages[0]).to.include('GET')
-    expect(messages[0]).to.include('http://www.test.com')
-    expect(messages[0]).to.include('1 links found')
-    expect(messages[0]).to.include('1 not checked')
-    expect(messages[0]).to.not.include('0 broken')
+    expect(messages.length).toEqual(1)
+    expect(messages[0]).toContain('200')
+    expect(messages[0]).toContain('GET')
+    expect(messages[0]).toContain('http://www.test.com')
+    expect(messages[0]).toContain('1 links found')
+    expect(messages[0]).toContain('1 not checked')
+    expect(messages[0]).not.toContain('0 broken')
   })
 
   it('logs error summary at end', async () => {
@@ -99,11 +97,11 @@ describe('ConsoleFormatter', () => {
 
     await instance.onceAsync('finish')
 
-    expect(messages.length).to.eq(5)
-    expect(messages[2]).to.include('The following URLs are broken')
-    expect(messages[3]).to.include('http://www.test.com/notfound')
-    expect(messages[4]).to.include('http://www.test.com/asdf')
-    expect(messages[4]).to.include('found on http://www.test.com/good')
+    expect(messages.length).toEqual(5)
+    expect(messages[2]).toContain('The following URLs are broken')
+    expect(messages[3]).toContain('http://www.test.com/notfound')
+    expect(messages[4]).toContain('http://www.test.com/asdf')
+    expect(messages[4]).toContain('found on http://www.test.com/good')
   })
 
   it('does not log leaf nodes', async () => {
@@ -146,12 +144,12 @@ describe('ConsoleFormatter', () => {
 
     await instance.onceAsync('finish')
 
-    expect(messages.length).to.eq(3)
-    expect(messages[0]).to.include('200')
-    expect(messages[0]).to.include('GET')
-    expect(messages[0]).to.include('http://www.test.com')
-    expect(messages[0]).to.include('1 links found')
-    expect(messages[0]).to.include('1 broken')
+    expect(messages.length).toEqual(3)
+    expect(messages[0]).toContain('200')
+    expect(messages[0]).toContain('GET')
+    expect(messages[0]).toContain('http://www.test.com')
+    expect(messages[0]).toContain('1 links found')
+    expect(messages[0]).toContain('1 broken')
   })
 
   it('logs recursive nodes', async () => {
@@ -207,11 +205,11 @@ describe('ConsoleFormatter', () => {
 
     await instance.onceAsync('finish')
 
-    expect(messages.length).to.eq(4)
-    expect(messages[1]).to.include('201')
-    expect(messages[1]).to.include('GET')
-    expect(messages[1]).to.include('http://www.test2.com')
-    expect(messages[1]).to.include('1 links found')
-    expect(messages[1]).to.include('1 broken')
+    expect(messages.length).toEqual(4)
+    expect(messages[1]).toContain('201')
+    expect(messages[1]).toContain('GET')
+    expect(messages[1]).toContain('http://www.test2.com')
+    expect(messages[1]).toContain('1 links found')
+    expect(messages[1]).toContain('1 broken')
   })
 })

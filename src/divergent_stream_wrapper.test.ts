@@ -1,10 +1,7 @@
-import { expect } from 'chai'
-import { } from 'mocha'
 
 import { wait, waitUntil } from 'async-toolbox'
 import {  ParallelTransform } from 'async-toolbox/stream'
 import { DivergentStreamWrapper } from './divergent_stream_wrapper'
-import { Host } from './hostname_set'
 import { Chunk } from './model'
 import { EOF } from './reentry'
 import { parseUrl } from './url'
@@ -13,7 +10,7 @@ import { parseUrl } from './url'
 
 describe('DivergentStreamWrapper', () => {
 
-  context('multiple streams', () => {
+  describe('multiple streams', () => {
     it('waits for all streams to drain on an EOF', async () => {
       const streams: { [hash: string]: Array<(result?: any) => void> } = {}
 
@@ -53,14 +50,14 @@ describe('DivergentStreamWrapper', () => {
 
       // the stream wrapper should hold the EOF because the other stream isn't done
       await wait(10)
-      expect(collected).to.deep.eq(['result1'])
+      expect(collected).toEqual(['result1'])
 
       // second stream finishes it's fetch
       streams['test2.com/http:/'][0]('result2')
       await wait(10)
 
       // now the stream wrapper should send the EOF
-      expect(collected).to.deep.eq(['result1', 'result2', theEOF])
+      expect(collected).toEqual(['result1', 'result2', theEOF])
     })
 
     it('can recreate the streams after an EOF', async () => {
@@ -110,7 +107,7 @@ describe('DivergentStreamWrapper', () => {
       await waitUntil(() => streams['test2.com/http:/'].length > 1)
       streams['test2.com/http:/'][1]('result4')
       await wait(10)
-      expect(collected).to.deep.eq(['result1', 'result2', theEOF, 'result3', 'result4'])
+      expect(collected).toEqual(['result1', 'result2', theEOF, 'result3', 'result4'])
     })
   })
 })
