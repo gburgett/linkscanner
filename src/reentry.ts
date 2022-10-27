@@ -50,7 +50,7 @@ export class Reentry extends Transform {
     const ch: Chunk =
       typeof(chunk) == 'string' ? { url: parseUrl(chunk) }
         : ('url' in chunk) ? chunk // chunk instanceof Chunk
-        : { url: chunk } // chunk instanceof URL
+          : { url: chunk } // chunk instanceof URL
 
     this.counter++
     this._run(ch)
@@ -86,10 +86,6 @@ export class EOF {
 export function isEOF(chunk: any): chunk is EOF {
   return typeof chunk == 'object' &&
     chunk instanceof EOF
-}
-
-function unknownChunk(chunk: any): never {
-  throw new Error(`Unexpected chunk type ${typeof chunk} - ${chunk}`)
 }
 
 export function handleEOF(reentry: Writable<EOF>) {

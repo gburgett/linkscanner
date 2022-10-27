@@ -52,6 +52,7 @@ export class ProgressBar extends Writable implements Logger {
     })
     this._options = assign({
       logger: defaultLogger,
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       color: (typeof process != 'undefined' && require('supports-color').stderr.level) || false,
     }, options)
 
