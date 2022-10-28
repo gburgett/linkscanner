@@ -1,4 +1,4 @@
-import cheerio from 'cheerio'
+import cheerio, {AnyNode, Element as CheerioElement} from 'cheerio'
 import { Request, Response } from 'cross-fetch'
 
 import { ParserOptions } from '.'
@@ -51,7 +51,7 @@ export class CheerioParser {
     let baseUrl = response.url || request.url
     const baseElement = $('base').first()
     if (baseElement && baseElement.attr('href')) {
-      baseUrl = parseUrl(baseElement.attr('href'), response.url || request.url).toString()
+      baseUrl = parseUrl(baseElement.attr('href')!, response.url || request.url).toString()
     }
 
     const unique = new Set<string>()
@@ -66,7 +66,7 @@ export class CheerioParser {
       })
     })
 
-    function parseAttr(element: CheerioElement, ...attrs: string[]): void {
+    function parseAttr(element: AnyNode, ...attrs: string[]): void {
       if (attrs.length == 0) {
         throw new Error(`no attrs given to select`)
       }
@@ -74,7 +74,7 @@ export class CheerioParser {
       const $elem = $(element)
       attrs.forEach((attr) => {
         const href = attr.startsWith('data-') ?
-          $elem.data(attr.substr(5)) :
+          $elem.data(attr.substr(5)) as string :
           $elem.attr(attr)
         if (href) {
           let url: URL | undefined

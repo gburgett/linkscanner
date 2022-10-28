@@ -1,7 +1,7 @@
 import { throttle } from 'async-toolbox'
 import { Writable } from 'stream'
 
-import chalk, { Chalk } from 'chalk'
+import chalk, { Chalk, Level } from 'chalk'
 import { defaultLogger, Logger } from './logger'
 import { Result } from './model'
 import { assign, isomorphicPerformance, Options } from './util'
@@ -16,7 +16,7 @@ export interface ProgressBarOptions {
   /** The expected total amount of URLs.  Set this if using -r0 with a fixed URL list. */
   total?: number
 
-  color: boolean | number,
+  color: boolean | Level,
 }
 
 interface ProgressBarState {
@@ -33,7 +33,7 @@ interface ProgressBarState {
 
 export class ProgressBar extends Writable implements Logger {
   private readonly _options: ProgressBarOptions
-  private readonly _chalk: Chalk
+  private _chalk: Chalk
 
   private readonly state: ProgressBarState = {
     checked: new Set<string>(),
@@ -53,12 +53,15 @@ export class ProgressBar extends Writable implements Logger {
     this._options = assign({
       logger: defaultLogger,
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      color: (typeof process != 'undefined' && require('supports-color').stderr.level) || false,
+      color: false,
     }, options)
 
-    this._chalk = new chalk.constructor({
-      enabled: !!this._options.color,
-      level: typeof(this._options.color) == 'boolean' ? 1 : this._options.color,
+    if (options?.color == undefined && typeof process != 'undefined') {
+      this._options.color = chalk.stderr.supportsColor ? chalk.stderr.supportsColor.level : false
+    }
+
+    this._chalk = new chalk.Instance({
+      level: typeof(this._options.color) == 'boolean' ? 1 : this._options.color || 0,
     })
 
     this.on('pipe', (resultsStream) => {

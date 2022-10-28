@@ -112,8 +112,8 @@ export class Fetcher extends ParallelTransform {
         type: 'error',
         leaf: true,
         status: undefined,
-        reason: ex.name == 'TimeoutError' ? 'timeout' : 'error',
-        error: typeof ex == 'string' ? new Error(ex) : ex,
+        reason: (ex as any).name == 'TimeoutError' ? 'timeout' : 'error',
+        error: typeof ex == 'string' ? new Error(ex) : (ex as Error),
       }
       this.emit('fetchError', request)
       this.push(errorResult)
