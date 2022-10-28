@@ -31,8 +31,7 @@ describe('Fetcher', () => {
       logger: console,
     })
 
-  it.skip('gets a result from a page', async function() {
-    this.timeout(10000)
+  it('gets a result from a page', async function() {
     const uut = new Fetcher({
       // note: intentionally not setting a mock fetcher.  This is a true integration test.
     })
