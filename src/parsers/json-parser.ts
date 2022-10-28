@@ -14,7 +14,7 @@ const defaultIncludes = [
 ]
 
 export class JsonParser {
-  public static readonly regexp = /^\s*((((ftp|http|https):)?\/\/)|\/)[^ "<\{\}]+\s*$/igm
+  public static readonly regexp = /^\s*((((ftp|http|https):)?\/\/)|\/)[^ "<{}]+\s*$/igm
 
   private readonly _options: ParserOptions
   private readonly _seen = new Set<string>()
@@ -64,7 +64,7 @@ export class JsonParser {
   private* traverse(json: any): Iterable<string> {
     for (const path of this._options.include) {
       for (const obj of JSONPath({ path, json })) {
-          // directly selected strings
+        // directly selected strings
         if (typeof obj == 'string') {
           yield obj
 
@@ -79,6 +79,7 @@ export class JsonParser {
           // objects
         } else if (typeof obj == 'object') {
           for (const key of Object.keys(obj)) {
+            // eslint-disable-next-line no-prototype-builtins
             if (!obj.hasOwnProperty(key)) { continue }
             if (typeof obj[key] != 'string') { continue }
 
@@ -95,11 +96,11 @@ export class JsonParser {
  */
 function* traverse(o: any, path: string[] = []): Iterable<{ key: string, value: string, path: string[]}> {
   for (const i of Object.keys(o)) {
-      const itemPath = path.concat(i)
-      yield {key: i, value: o[i], path: itemPath }
-      if (o[i] !== null && typeof(o[i]) == 'object') {
-          // going one step down in the object tree!!
-          yield* traverse(o[i], itemPath)
-      }
+    const itemPath = path.concat(i)
+    yield {key: i, value: o[i], path: itemPath }
+    if (o[i] !== null && typeof(o[i]) == 'object') {
+      // going one step down in the object tree!!
+      yield* traverse(o[i], itemPath)
+    }
   }
 }

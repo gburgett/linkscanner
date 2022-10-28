@@ -32,7 +32,7 @@ export class HostnameSet {
   private readonly _options: HostnameSetOptions
 
   constructor(public readonly hostnames: Set<string>,
-              options?: Options<HostnameSetOptions>) {
+    options?: Options<HostnameSetOptions>) {
     this._options = assign({
       followRedirects: false,
       ignoreRobotsFile: false,
@@ -42,7 +42,7 @@ export class HostnameSet {
       maxConcurrency: 1,
       parsers: {},
     },
-      options)
+    options)
   }
 
   public async lockFor(host: Host): Promise<Semaphore> {

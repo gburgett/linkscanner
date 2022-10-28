@@ -28,10 +28,10 @@ export class DivergentStreamWrapper extends ParallelTransform {
   private readonly _streams: Map<string, Duplex>
   private readonly _createStreamOptions: CreateStreamOptions
   private readonly _forwarder = new EventForwarder({
-      // Don't forward the normal stream events from inner streams, just the
-      // special Linkscanner events
-      ignore: StreamEvents,
-    }).to(this)
+    // Don't forward the normal stream events from inner streams, just the
+    // special Linkscanner events
+    ignore: StreamEvents,
+  }).to(this)
 
   constructor(options: DivergentStreamWrapperOptions) {
     super({

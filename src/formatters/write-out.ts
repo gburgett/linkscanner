@@ -13,7 +13,7 @@ export interface WriteOutFormatterOptions {
 
 export class WriteOutFormatter extends Writable {
 
-  public static readonly templateRegexp = /[\$\%]\{(?<key>[^\}]*)\}/g
+  public static readonly templateRegexp = /[$%]\{(?<key>[^}]*)\}/g
   private readonly options: WriteOutFormatterOptions
 
   private readonly results = new Map<string, Result>()
@@ -147,7 +147,7 @@ export class WriteOutFormatter extends Writable {
     const {logger, formatter} = this.options
     let matchedOne = false
     let matches: RegExpExecArray | null
-    // tslint:disable-next-line: no-conditional-assignment
+    // eslint-disable-next-line no-cond-assign
     while (matches = WriteOutFormatter.templateRegexp.exec(formatter)) {
       matchedOne = true
       if (matches.groups &&

@@ -14,15 +14,15 @@ describe('Fetcher', () => {
   let options: Partial<FetchOptions>
   let fetchMockSandbox: fetchMock.FetchMockSandbox
   beforeEach(() => {
-      fetchMock.reset()
-      fetchMockSandbox = fetchMock.sandbox()
-      options = {
-        fetch: {
-          fetch: fetchMockSandbox,
-          Request: fetchMock.config.Request!,
-        },
-      }
-    })
+    fetchMock.reset()
+    fetchMockSandbox = fetchMock.sandbox()
+    options = {
+      fetch: {
+        fetch: fetchMockSandbox,
+        Request: fetchMock.config.Request!,
+      },
+    }
+  })
 
   const instance = (additionalOptions?: Partial<FetchOptions>) =>
     new Fetcher({

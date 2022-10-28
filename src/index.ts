@@ -100,9 +100,9 @@ export const runDefaults: Readonly<Args> = {
   verbose: false,
   debug: false,
   progress: !!(
-      typeof process != 'undefined' &&
+    typeof process != 'undefined' &&
       process.stderr.isTTY
-    ),
+  ),
 }
 
 /**
@@ -279,8 +279,8 @@ class Builder {
       _progress?: Builder['_progress'],
     },
   ) {
-      this._formatters = previousBuilder ? previousBuilder._formatters : []
-      this._progress = previousBuilder && previousBuilder._progress
+    this._formatters = previousBuilder ? previousBuilder._formatters : []
+    this._progress = previousBuilder && previousBuilder._progress
   }
 
   /**
@@ -294,7 +294,7 @@ class Builder {
       f = defaultFormatter
     } else if (formatters[formatter]) {
       f = formatters[formatter]
-    } else if (/[\$\%]{/.test(formatter)) {
+    } else if (/[$%]{/.test(formatter)) {
       f = formatters['write-out']
     }
     if (!f) {
@@ -325,7 +325,7 @@ class Builder {
 
     return new Builder({
       ...this._options,
-        // the progress bar intercepts logging so as to clear & rewrite after each log line
+      // the progress bar intercepts logging so as to clear & rewrite after each log line
       logger: _progress,
     }, {
       ...this,
