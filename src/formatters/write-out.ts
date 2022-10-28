@@ -38,12 +38,14 @@ export class WriteOutFormatter extends JsonFormatter {
   private template(row: JsonFormatterRow) {
     const { formatter } = this.options
 
-    const templateVariables = {
+    const templateVariables: TemplateVariables = {
       ...row,
       response_code: row.responseCode,
       response_code_effective: row.responseCodeEffective,
       url: row.url,
       url_effective: row.urlEffective,
+      parentUrl: row.parentUrl,
+      parent_url: row.parentUrl,
       num_redirects: row.numRedirects,
       time_total: row.timeTotal,
       http_method: row.httpMethod,
@@ -84,6 +86,7 @@ interface TemplateVariables extends JsonFormatterRow {
   response_code_effective?: number,
   url: string,
   url_effective: string,
+  parent_url?: string,
   num_redirects: number,
   time_total?: number,
   http_method?: string,
@@ -103,6 +106,8 @@ const templateKeys: Array<keyof TemplateVariables> = [
   'http_method',
   'numRedirects',
   'num_redirects',
+  'parentUrl',
+  'parent_url',
   'responseCode',
   'response_code',
   'responseCodeEffective',

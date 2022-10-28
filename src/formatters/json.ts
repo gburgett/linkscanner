@@ -101,6 +101,7 @@ export class JsonFormatter extends Writable {
       urlEffective: result.url.toString(),
       host: result.url.host,
       hostEffective: result.url.host,
+      parentUrl: result.parent?.url.toString(),
       httpMethod: isSkippedResult(result) ? 'SKIP' : result.method,
       numRedirects: 0,
       responseCode: 'status' in result && result.status || undefined,
@@ -116,11 +117,12 @@ export class JsonFormatter extends Writable {
       
     } 
 
-    const total = mergeRedirectParents(result)
-    row.url = total.url.toString()
-    row.numRedirects = total.numRedirects,
-    row.timeTotal = 'ms' in total && total.ms || undefined
-    if (total.parentStatus) { row.responseCode = total.parentStatus }
+    const merged = mergeRedirectParents(result)
+    row.url = merged.url.toString()
+    row.numRedirects = merged.numRedirects,
+    row.timeTotal = 'ms' in merged && merged.ms || undefined
+    if (merged.parentStatus) { row.responseCode = merged.parentStatus }
+    if (merged.parent) { row.parentUrl = merged.parent.url.toString() }
 
     this.print(row)
   }
@@ -133,6 +135,7 @@ export interface JsonFormatterRow {
   urlEffective: string,
   host: string,
   hostEffective: string,
+  parentUrl?: string
   numRedirects: number,
   timeTotal?: number,
   httpMethod?: string,
