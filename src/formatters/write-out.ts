@@ -1,10 +1,7 @@
-import { Writable } from 'stream'
 
 import { defaultLogger, Logger } from '../logger'
-import { isErrorResult, isRedirectResult, isSkippedResult, Result } from '../model'
-import { allParents, mergeRedirectParents } from '../model/helpers'
-import { parseUrl } from '../url'
 import { assign, Options } from '../util'
+import { JsonFormatter, JsonFormatterRow } from './json'
 
 export interface WriteOutFormatterOptions {
   logger: Logger
@@ -12,18 +9,13 @@ export interface WriteOutFormatterOptions {
   showSkipped?: boolean
 }
 
-export class WriteOutFormatter extends Writable {
+export class WriteOutFormatter extends JsonFormatter {
 
   public static readonly templateRegexp = /[$%]\{(?<key>[^}]*)\}/g
-  private readonly options: WriteOutFormatterOptions
-
-  private readonly results = new Map<string, Result>()
-  private readonly flushed = new Set<string>()
+  protected readonly options: WriteOutFormatterOptions
 
   constructor(options?: Options<WriteOutFormatterOptions>) {
-    super({
-      objectMode: true,
-    })
+    super(options)
 
     const formatter = options && options.formatter
     if (!formatter) {
@@ -39,104 +31,27 @@ export class WriteOutFormatter extends Writable {
     this.validateTemplate()
   }
 
-  public _write(result: Result, encoding: any, cb: (error?: Error | null) => void) {
-    this.results.set(result.url.toString(), result)
-
-    this._tryFlush(result)
-
-    cb()
+  protected print(row: JsonFormatterRow) {
+    this.options.logger.log(this.template(row))
   }
 
-  public _final(cb: (error?: Error | null) => void) {
-    for (const [url, result] of Array.from(this.results.entries())) {
-      if (this.flushed.has(url)) {
-        continue
-      }
-
-      this._flush(result)
-    }
-
-    cb()
-  }
-
-  private _tryFlush(result: Result) {
-    if (this.flushed.has(result.url.toString())) {
-      return
-    }
-
-    // We flush all leaf nodes and all non-redirects
-    if (result.leaf || ![301, 302, 307].includes(result.status)) {
-      this._flush(result)
-    }
-
-    // all parents are considered flushed, b/c if we didn't flush a redirect,
-    // when we flush it we'll collapse it with all it's parents.
-    for (const p of allParents(result)) {
-      this.flushed.add(p.url.toString())
-    }
-  }
-
-  private _flush(result: Result) {
-    const {logger, showSkipped} = this.options
-    if (!showSkipped && isSkippedResult(result)) {
-      // ignore
-      return
-    }
-
-    if (isRedirectResult(result)) {
-      // Is there another result in our results list that this one redirects to?
-      const location = result.headers && result.headers.Location && parseUrl(result.headers.Location)
-      if (location) {
-        const redirectedTo = this.results.get(location.toString())
-        if (redirectedTo && !isSkippedResult(redirectedTo)) {
-          // Make a fake result pointing up to this redirect
-          // Aside: I'm impressed that Typescript can infer Result is not a
-          // SkippedResult after this line
-          result = {
-            ...redirectedTo,
-            parent: result,
-          }
-        }
-      }
-    }
-
-    this.flushed.add(result.url.toString())
-
-    const resultVars: TemplateVariables = {
-      url: result.url.toString(),
-      url_effective: result.url.toString(),
-      http_method: isSkippedResult(result) ? 'SKIP' : result.method,
-      num_redirects: 0,
-      response_code: 'status' in result && result.status || undefined,
-      response_code_effective: 'status' in result && result.status || undefined,
-    }
-
-    if (isErrorResult(result) || isSkippedResult(result)) {
-      resultVars.error_reason = result.reason,
-      resultVars.error_message = 'error' in result && result.error ? (
-        result.error.message || result.error.toString()) :
-        undefined
-
-      const parents = result.parent && mergeRedirectParents(result.parent)
-      if (parents) {
-        resultVars.url = parents.url.toString()
-        resultVars.num_redirects = parents.numRedirects + 1,
-        resultVars.time_total = parents.ms
-        resultVars.response_code = parents.status
-      }
-    } else {
-      const total = mergeRedirectParents(result)
-      resultVars.url = total.url.toString()
-      resultVars.num_redirects = total.numRedirects,
-      resultVars.time_total = total.ms
-      if (total.parentStatus) { resultVars.response_code = total.parentStatus }
-      resultVars.content_type = result.contentType || undefined
-    }
-    logger.log(this.template(resultVars))
-  }
-
-  private template(templateVariables: TemplateVariables) {
+  private template(row: JsonFormatterRow) {
     const { formatter } = this.options
+
+    const templateVariables = {
+      ...row,
+      response_code: row.responseCode,
+      response_code_effective: row.responseCodeEffective,
+      url: row.url,
+      url_effective: row.urlEffective,
+      num_redirects: row.numRedirects,
+      time_total: row.timeTotal,
+      http_method: row.httpMethod,
+      content_type: row.contentType,
+      error_reason: row.errorReason,
+      error_message: row.errorMessage
+    }
+
     return formatter.replace(WriteOutFormatter.templateRegexp, (_, g) => {
       const value = templateVariables[g as keyof TemplateVariables]
       if (value === undefined || value === null) {
@@ -164,7 +79,7 @@ export class WriteOutFormatter extends Writable {
   }
 }
 
-interface TemplateVariables {
+interface TemplateVariables extends JsonFormatterRow {
   response_code?: number,
   response_code_effective?: number,
   url: string,
@@ -178,14 +93,23 @@ interface TemplateVariables {
 }
 
 const templateKeys: Array<keyof TemplateVariables> = [
+  'contentType',
   'content_type',
+  'errorMessage',
   'error_message',
+  'errorReason',
   'error_reason',
+  'httpMethod',
   'http_method',
+  'numRedirects',
   'num_redirects',
+  'responseCode',
   'response_code',
+  'responseCodeEffective',
   'response_code_effective',
+  'timeTotal',
   'time_total',
   'url',
+  'urlEffective',
   'url_effective',
 ]

@@ -108,6 +108,7 @@ const argv = yargs
     type: 'string',
     description: 'CSS Selector for which HTML elements that should be scanned.  ' +
       'Examples: "a", "link[rel=\\"canonical\\"]", "img", "script", "form", "iframe", "all"',
+    defaultDescription: '"a[href]", "link[rel=\\"canonical\\"]'
   })
   .option('only', {
     array: true,

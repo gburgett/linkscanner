@@ -1,3 +1,4 @@
+import { URL } from '../url'
 import { Result, SuccessResult } from '.'
 
 /**
@@ -25,6 +26,7 @@ export function *allParents(result: Result) {
 }
 
 interface EnhancedSuccessResult extends SuccessResult {
+  urlEffective: URL,
   numRedirects: number
   parentStatus?: number
 }
@@ -37,6 +39,7 @@ export function mergeRedirectParents(child: SuccessResult): EnhancedSuccessResul
   let parent = child.parent
   let enhancedChild: EnhancedSuccessResult = {
     ...child,
+    urlEffective: child.url, // The end result URL, not overwritten by parent merging
     numRedirects: 0,
   }
   while (parent) {

@@ -8,6 +8,7 @@ import { BuildPipeline as BuildPipeline } from './build_pipeline'
 import { EventForwarder } from './event_forwarder'
 import { FetchInterface, FetchInterfaceWrapper } from './fetch_interface'
 import { ConsoleFormatter, ConsoleFormatterOptions } from './formatters/console'
+import { JsonFormatter, JsonFormatterOptions } from './formatters/json'
 import { TableFormatter, TableFormatterOptions } from './formatters/table'
 import { WriteOutFormatter, WriteOutFormatterOptions } from './formatters/write-out'
 import { debugLogger, defaultLogger, Logger } from './logger'
@@ -21,6 +22,7 @@ const formatters: { [name: string]: (args: FormatterOptions) => Writable<Result>
   'table': (args: TableFormatterOptions) => new TableFormatter(args),
   'console': (args: ConsoleFormatterOptions) => new ConsoleFormatter(args),
   'write-out': (args: WriteOutFormatterOptions) => new WriteOutFormatter(args),
+  'json': (args: JsonFormatterOptions) => new JsonFormatter(args)
 }
 
 type FormatterOptions = TableFormatterOptions & ConsoleFormatterOptions & WriteOutFormatterOptions
