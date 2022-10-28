@@ -243,6 +243,7 @@ class Linkscanner extends Transform {
       headers: headerObj,
       maxConcurrency,
       timeout,
+      logger: this._options.logger
     })
   }
 }

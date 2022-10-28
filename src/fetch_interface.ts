@@ -1,6 +1,7 @@
 import { Limiter, Semaphore, timeout as timeoutWrapper } from 'async-toolbox'
 import * as crossFetch from 'cross-fetch'
 import { Interval } from 'limiter'
+import { Logger } from './logger'
 
 import { assign, Options } from './util'
 
@@ -13,6 +14,7 @@ interface FetchWrapperOptions {
   headers: { [key: string]: string },
   timeout: number
   maxConcurrency: number | { tokens: number, interval: Interval }
+  logger?: Logger
 }
 
 export class FetchInterfaceWrapper implements FetchInterface {

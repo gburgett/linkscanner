@@ -5,7 +5,7 @@ import { Logger } from './logger'
 
 export function loadSource(args: { source: string | string[] }, logger: Logger) {
   // specify '-' to read from stdin
-  if (args.source == '-' || args.source == ['-'] ||
+  if (isStdin(args.source) ||
       // or if no URL is given on the command line
       args.source.length == 0 && typeof process != 'undefined') {
     logger.debug('reading URLs from STDIN')
@@ -48,4 +48,16 @@ class LineByLineTransform extends Transform {
     }
     cb()
   }
+}
+
+function isStdin(source: any) {
+  if(source == '-'){
+    return true
+  }
+
+  if (Array.isArray(source)) {
+    return source.length == 1 && source[0] == '-'
+  }
+
+  return false
 }
