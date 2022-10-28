@@ -23,10 +23,10 @@ const header = {
 }
 
 export class TableFormatter extends Writable {
-  private readonly options: TableFormatterOptions
-  private wroteHeader = false
+  protected readonly options: TableFormatterOptions
+  protected wroteHeader = false
 
-  private readonly columns: Array<keyof typeof header>
+  protected readonly columns: Array<keyof typeof header>
 
   constructor(options?: Options<TableFormatterOptions>) {
     super({
@@ -48,6 +48,22 @@ export class TableFormatter extends Writable {
   public _write(result: Result, encoding: any, cb: (error?: Error | null) => void) {
     this._format(result)
     cb()
+  }
+
+  protected print(...formattedLine: string[]) {
+    const { logger, compact } = this.options
+
+    if (compact) {
+      formattedLine = formattedLine.map((col) => col.trim())
+    } else {
+      if (!this.wroteHeader) {
+        const formattedHeader = this.columns.map((c) => header[c])
+        logger.log(formattedHeader.join('\t'))
+        this.wroteHeader = true
+      }
+    }
+
+    logger.log(formattedLine.join('\t'))
   }
 
   private _format(result: Result) {
@@ -78,17 +94,7 @@ export class TableFormatter extends Writable {
       error: 'error' in result && result.error.toString(),
     }
 
-    let formattedLine = this.columns.map((c) => (line[c] || '').padEnd(header[c].length))
-    if (compact) {
-      formattedLine = formattedLine.map((col) => col.trim())
-    } else {
-      if (!this.wroteHeader) {
-        const formattedHeader = this.columns.map((c) => header[c])
-        logger.log(formattedHeader.join('\t'))
-        this.wroteHeader = true
-      }
-    }
-
-    logger.log(formattedLine.join('\t'))
+    const formattedLine = this.columns.map((c) => (line[c] || '').padEnd(header[c].length))
+    this.print(...formattedLine) 
   }
 }

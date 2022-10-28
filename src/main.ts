@@ -85,7 +85,9 @@ const argv = yargs
   })
   .option('formatter', {
     alias: ['f', 'format'],
-    description: 'Choose the output formatter or provide a format string',
+    description: 'Set the output formatter or format string.  \n' + 
+        'Options: console (default), table, json, csv, \n' +
+        'or format string like "url: %{url_effective}"',
     type: 'string',
   })
   .option('skip-leaves', {
@@ -106,9 +108,8 @@ const argv = yargs
     alias: 'i',
     array: true,
     type: 'string',
-    description: 'CSS Selector for which HTML elements that should be scanned.  ' +
+    description: 'CSS Selector for which HTML elements to inspect.  \n' +
       'Examples: "a", "link[rel=\\"canonical\\"]", "img", "script", "form", "iframe", "all"',
-    defaultDescription: '"a[href]", "link[rel=\\"canonical\\"]'
   })
   .option('only', {
     array: true,
