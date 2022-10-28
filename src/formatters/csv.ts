@@ -1,4 +1,4 @@
-import { stringify } from 'csv-stringify/sync';
+import { stringify } from 'csv-stringify/sync'
 
 import { Options } from '../util'
 import { TableFormatter, TableFormatterOptions } from './table'
