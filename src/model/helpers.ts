@@ -25,8 +25,7 @@ export function *allParents(result: Result) {
   }
 }
 
-interface EnhancedSuccessResult extends SuccessResult {
-  urlEffective: URL,
+interface EnhancedResult {
   numRedirects: number
   parentStatus?: number
 }
@@ -35,11 +34,10 @@ interface EnhancedSuccessResult extends SuccessResult {
  * Merges several redirect objects into one result representing all the redirects
  * that it took to get to the final result.
  */
-export function mergeRedirectParents(child: SuccessResult): EnhancedSuccessResult {
+export function mergeRedirectParents<T extends Result>(child: T): T & EnhancedResult {
   let parent = child.parent
-  let enhancedChild: EnhancedSuccessResult = {
+  const enhancedChild: T & EnhancedResult = {
     ...child,
-    urlEffective: child.url, // The end result URL, not overwritten by parent merging
     numRedirects: 0,
   }
   while (parent) {
@@ -48,17 +46,15 @@ export function mergeRedirectParents(child: SuccessResult): EnhancedSuccessResul
     }
 
     // "merge" redirect results into the child result
-    enhancedChild = {
-      // keep the final contentType, etc
-      ...enhancedChild,
+    Object.assign(enhancedChild, {
       // sum the total ms
-      ms: enhancedChild.ms + parent.ms,
+      ms: ('ms' in enhancedChild && enhancedChild.ms || 0) + parent.ms,
       // use the redirect's URL, cause that's the one found on page
       url: parent.url,
       parentStatus: parent.status,
       parent: parent.parent,
       numRedirects: enhancedChild.numRedirects + 1,
-    }
+    })
     parent = parent.parent
   }
   return enhancedChild

@@ -105,34 +105,23 @@ export class JsonFormatter extends Writable {
       numRedirects: 0,
       responseCode: 'status' in result && result.status || undefined,
       responseCodeEffective: 'status' in result && result.status || undefined,
+      contentType: 'contentType' in result && result.contentType || undefined
     }
 
-    if (isErrorResult(result) || isSkippedResult(result)) {
+    if (isErrorResult(result)) {
       row.errorReason = result.reason,
       row.errorMessage = 'error' in result && result.error ? (
         result.error.message || result.error.toString()) :
         undefined
+      
+    } 
 
-      const parents = result.parent && mergeRedirectParents(result.parent)
-      if (parents) {
-        row.url = parents.url.toString()
-        row.numRedirects = parents.numRedirects + 1,
-        row.timeTotal = parents.ms
-        row.responseCode = parents.status
-      }
-    } else {
-      const total = mergeRedirectParents(result)
-      row.url = total.url.toString()
-      row.numRedirects = total.numRedirects,
-      row.timeTotal = total.ms
-      if (total.parentStatus) { row.responseCode = total.parentStatus }
-      if (total.urlEffective) {
-        row.urlEffective = total.urlEffective.toString()
-        row.hostEffective = total.urlEffective.host
-      }
-      row.contentType = result.contentType || undefined
-    }
-    
+    const total = mergeRedirectParents(result)
+    row.url = total.url.toString()
+    row.numRedirects = total.numRedirects,
+    row.timeTotal = 'ms' in total && total.ms || undefined
+    if (total.parentStatus) { row.responseCode = total.parentStatus }
+
     this.print(row)
   }
 }
