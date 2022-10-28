@@ -7,6 +7,7 @@ import { assign, Options, present } from '../util'
 
 export interface TableFormatterOptions {
   logger: Logger
+  showSkipped?: boolean
   verbose?: boolean
   compact?: boolean
 }
@@ -50,8 +51,8 @@ export class TableFormatter extends Writable {
   }
 
   private _format(result: Result) {
-    const { logger, verbose, compact } = this.options
-    if (isSkippedResult(result)) {
+    const { logger, verbose, compact, showSkipped } = this.options
+    if (!showSkipped && isSkippedResult(result)) {
       return
     }
 
@@ -68,8 +69,8 @@ export class TableFormatter extends Writable {
     }
 
     const line = {
-      status: result.status && result.status.toFixed(0),
-      method: result.method && result.method,
+      status: 'status' in result && result.status && result.status.toFixed(0),
+      method: isSkippedResult(result) ? 'SKIP' : result.method,
       url: result.url.toString(),
       contentType: 'contentType' in result && result.contentType && result.contentType,
       ms: 'ms' in result && result.ms && result.ms.toFixed(0).padStart(4),

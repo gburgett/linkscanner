@@ -1,4 +1,4 @@
-import yargs from 'yargs'
+import yargs, { boolean, describe } from 'yargs'
 
 import chalk from 'chalk'
 import Linkscanner, { runDefaults } from '.'
@@ -67,11 +67,6 @@ const argv = yargs
       return num
     },
   })
-  .option('exclude-external', {
-    boolean: true,
-    description: 'Do not test links that point to other hosts',
-    alias: 'e',
-  })
   .option('XGET', {
     boolean: true,
     description: 'Always use a GET request when normally would use a HEAD',
@@ -92,6 +87,20 @@ const argv = yargs
     alias: ['f', 'format'],
     description: 'Choose the output formatter or provide a format string',
     type: 'string',
+  })
+  .option('skip-leaves', {
+    boolean: true,
+    description: 'Do not issue a HEAD request to leaf urls, simply print them (implies show-skipped)',
+  })
+  .option('exclude-external', {
+    boolean: true,
+    description: 'Do not test links that point to other hosts',
+    alias: 'e',
+  })
+  .option('show-skipped', {
+    description: 'Display skipped results in the formatted output',
+    type: 'boolean',
+    boolean: true,
   })
   .option('include', {
     alias: 'i',
@@ -115,6 +124,10 @@ const options = assign({},
     forceGet: argv.XGET,
   }),
   argv)
+
+if (options['skip-leaves'] && options['show-skipped'] == undefined) {
+  options['show-skipped'] = options.showSkipped = true
+}
 
 let builder = Linkscanner.build(options)
   .addFormatter(options.formatter)

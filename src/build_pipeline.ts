@@ -20,6 +20,7 @@ export interface BuildPipelineOptions {
   ignoreRobotsFile: boolean
   recursive: boolean | number
   'exclude-external': boolean
+  'skip-leaves': boolean
   /** Always executes a GET request even on leaf nodes */
   forceGet: boolean
   maxConcurrency: number | { tokens: number, interval: Interval }
@@ -51,6 +52,7 @@ export function BuildPipeline(
       'followRedirects': false,
       'recursive': false,
       'exclude-external': false,
+      'skip-leaves': false,
       'parsers': {},
     },
     args,
@@ -170,6 +172,15 @@ export function BuildPipeline(
   // The CLI or consuming program needs the readable stream of results
   return results
 
+  /**
+   * This function is responsible for determining whether a URL will be fed
+   * back into the pipeline to be checked.
+   * 
+   * If the URL is skipped, it writes a SkippedResult directly to the results stream.
+   * If the URL is beyond the recursion limit, it does nothing with it.
+   * If the URL should be checked, it writes that URL back to the `reentry` stream.
+   *     This function also sets the "leaf" flag if the URL is a leaf.
+   */
   function onUrl({ url, parent }: { url: URL, parent: SuccessResult }) {
     try {
       if (options['exclude-external'] && (!hostnameSet.hostnames.has(url.hostname))) {
@@ -197,6 +208,20 @@ export function BuildPipeline(
 
       if (leaf) {
         logger.debug('leaf', url.toString())
+
+        if (options['skip-leaves']) {
+          // only scan URLs matching our known hostnames
+          const result: SkippedResult = {
+            type: 'skip',
+            url,
+            parent,
+            host: url.hostname,
+            leaf: true,
+            reason: 'skip-leaves',
+          }
+          results.write(result)
+          return
+        }
       }
 
       // forward this URL cause we're going to check it.
@@ -207,6 +232,10 @@ export function BuildPipeline(
     }
   }
 
+  /**
+   * Determines whether a URL should be considered a "leaf".  Leaf urls are only
+   * checked with a HEAD request, not a GET (unless the -XGET option is set).
+   */
   function isLeafNode({ url, parent }: { url: URL, parent?: SuccessResult }): boolean {
     // external URLs are always leafs
     if (!hostnameSet.hostnames.has(url.hostname)) { return true }

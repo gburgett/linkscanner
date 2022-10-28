@@ -9,6 +9,7 @@ import { assign, Options } from '../util'
 export interface WriteOutFormatterOptions {
   logger: Logger
   formatter: string
+  showSkipped?: boolean
 }
 
 export class WriteOutFormatter extends Writable {
@@ -76,8 +77,8 @@ export class WriteOutFormatter extends Writable {
   }
 
   private _flush(result: Result) {
-    const {logger} = this.options
-    if (isSkippedResult(result)) {
+    const {logger, showSkipped} = this.options
+    if (!showSkipped && isSkippedResult(result)) {
       // ignore
       return
     }
@@ -104,15 +105,17 @@ export class WriteOutFormatter extends Writable {
     const resultVars: TemplateVariables = {
       url: result.url.toString(),
       url_effective: result.url.toString(),
-      http_method: result.method,
+      http_method: isSkippedResult(result) ? 'SKIP' : result.method,
       num_redirects: 0,
-      response_code: result.status,
-      response_code_effective: result.status,
+      response_code: 'status' in result && result.status || undefined,
+      response_code_effective: 'status' in result && result.status || undefined,
     }
 
-    if (isErrorResult(result)) {
+    if (isErrorResult(result) || isSkippedResult(result)) {
       resultVars.error_reason = result.reason,
-      resultVars.error_message = result.error.message || result.error.toString()
+      resultVars.error_message = 'error' in result && result.error ? (
+        result.error.message || result.error.toString()) :
+        undefined
 
       const parents = result.parent && mergeRedirectParents(result.parent)
       if (parents) {
