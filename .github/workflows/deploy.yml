@@ -2,8 +2,6 @@ name: Deploy
 
 on:
   push:
-    branches:
-      - master
     tags:    
       - 'v*'
 
@@ -30,6 +28,11 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/gburgett/linkscanner
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
