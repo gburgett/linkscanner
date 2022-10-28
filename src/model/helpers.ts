@@ -48,7 +48,7 @@ export function mergeRedirectParents<T extends Result>(child: T): T & EnhancedRe
     // "merge" redirect results into the child result
     Object.assign(enhancedChild, {
       // sum the total ms
-      ms: ('ms' in enhancedChild && enhancedChild.ms || 0) + parent.ms,
+      ms: ('ms' in enhancedChild && (enhancedChild as any).ms || 0) + parent.ms,
       // use the redirect's URL, cause that's the one found on page
       url: parent.url,
       parentStatus: parent.status,
