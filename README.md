@@ -12,20 +12,48 @@ linkscanner
 Scans a web page for broken links
 
 Options:
-  --help                  Show help                                    [boolean]
-  --version               Show version number                          [boolean]
-  --followRedirects, -L   Follow 301 & 302 redirects to their destination and
-                          report that result                           [boolean]
-  --debug, -d             Print additional debug logging to stderr     [boolean]
-  --verbose, -v           Print more information in the output results
-                          (formatter dependent)                        [boolean]
-  --recursive, -r         Recursively crawl all links on the same host [boolean]
-  --exclude-external, -e  Do not test links that point to other hosts  [boolean]
-  --formatter, -f         Choose the output formatter
-                                                   [choices: "table", "console"]
-  --include, -i           CSS Selector for which HTML elements that should be
-                          scanned
-        [array] [choices: "a", "link", "img", "script", "form", "iframe", "all"]
+  --help                     Show help                                 [boolean]
+  --version                  Show version number                       [boolean]
+  --followRedirects, -L      Follow 301 & 302 redirects to their destination and
+                             report that result                        [boolean]
+  --debug, -d                Print additional debug logging to stderr  [boolean]
+  --verbose, -v              Print more information in the output results
+                             (formatter dependent)                     [boolean]
+  --compact, -c              Print less information in the output results
+                             (formatter dependent)                     [boolean]
+  --no-progress, -P          Do not display a progress bar             [boolean]
+  --progress, -p             display a progress bar                    [boolean]
+  --total                    Give the progress bar a hint of approx how many
+                             URLs we will scan                          [number]
+  --ignore-robots-file       Causes linkscanner to not respect robots file rules
+                             like disallow or crawl delay              [boolean]
+  --recursive, -r            Recursively crawl all links on the same host
+  --XGET                     Always use a GET request when normally would use a
+                             HEAD                                      [boolean]
+  --user-agent               A user-agent string to be used when sending
+                             requests                                   [string]
+  --max-concurrency          The maximum number of simultaneous requests going
+                             out from your computer                     [number]
+  --timeout                  The maximum time to wait (in seconds) for a
+                             response before writing a timeout to the results
+                                                          [number] [default: 10]
+  --headers, -H                                                          [array]
+  --formatter, -f, --format  Set the output formatter or format string.
+                             Options: console (default), table, json, csv,
+                             or format string like "url: %{url_effective}"
+                                                                        [string]
+  --skip-leaves              Do not issue a HEAD request to leaf urls, simply
+                             print them (implies show-skipped)         [boolean]
+  --exclude-external, -e     Do not test links that point to other hosts
+                                                                       [boolean]
+  --show-skipped             Display skipped results in the formatted output
+                                                                       [boolean]
+  --include, -i              CSS Selector for which HTML elements to inspect.
+                             Examples: "a", "link[rel=\"canonical\"]", "img",
+                             "script", "form", "iframe", "all"           [array]
+  --only                     A content type (or list of content types) to parse.
+                             All other content types will not be scanned for
+                             links.                                      [array]
 ```
 
 example:
@@ -144,3 +172,10 @@ Check JS, CSS, and Images with the `--include=all` option:
 200	HEAD	http://gordonburgett.net/js/custom.js                                           	  88	http://gordonburgett.net/
 200	HEAD	http://gordonburgett.net/js/highlight/highlight.pack.js                         	  87	http://gordonburgett.net/
 ```
+
+When scanning application/json responses, by default the scanner looks for URLs in any of the following keys, no matter
+how deep in the document:
+`links`, `_links`, `link`, `_link`, or `url`.
+
+If you want to scan more keys for links, use the `--include` option with a [jsonpath selector](https://jsonpath.com),
+or use `--include all` which will scan every key.

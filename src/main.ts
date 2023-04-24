@@ -79,13 +79,18 @@ const argv = yargs
     description: 'The maximum number of simultaneous requests going out from your computer',
     type: 'number',
   })
+  .option('timeout', {
+    description: 'The maximum time to wait (in seconds) for a response before writing a timeout to the results',
+    default: 10,
+    type: 'number'
+  })
   .option('headers', {
     alias: 'H',
     type: 'array',
   })
   .option('formatter', {
     alias: ['f', 'format'],
-    description: 'Set the output formatter or format string.  \n' + 
+    description: 'Set the output formatter or format string.  \n' +
         'Options: console (default), table, json, csv, \n' +
         'or format string like "url: %{url_effective}"',
     type: 'string',
@@ -129,6 +134,11 @@ const options = assign({},
 
 if (options['skip-leaves'] && options['show-skipped'] == undefined) {
   options['show-skipped'] = options.showSkipped = true
+}
+
+// The timeout method in FetchInterfaceWrapper expects milliseconds
+if (options.timeout) {
+  options.timeout = options.timeout * 1000
 }
 
 let builder = Linkscanner.build(options)

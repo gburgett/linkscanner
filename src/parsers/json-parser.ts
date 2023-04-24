@@ -11,6 +11,7 @@ const defaultIncludes = [
   '$.._links',
   '$..link',
   '$.._link',
+  '$..url'
 ]
 
 export class JsonParser {
