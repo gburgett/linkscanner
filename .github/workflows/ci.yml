@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Use Node 14
+    - name: Use Node 22
       uses: actions/setup-node@v3
       with:
-        node-version: 14
+        node-version: 22
 
     - name: Install Yarn
       run: npm install -g yarn
@@ -35,10 +35,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Use Node 14
+    - name: Use Node 22
       uses: actions/setup-node@v3
       with:
-        node-version: 14
+        node-version: 22
 
     - name: Install Yarn
       run: npm install -g yarn

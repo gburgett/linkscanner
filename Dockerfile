@@ -1,4 +1,4 @@
-FROM node:16 AS builder
+FROM node:22 AS builder
 
 WORKDIR /linkscanner/
 
@@ -7,7 +7,7 @@ RUN yarn
 
 RUN yarn build
 
-FROM node:16-alpine
+FROM node:22-alpine
 
 ENV NODE_ENV=production
 
