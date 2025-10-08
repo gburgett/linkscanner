@@ -176,7 +176,7 @@ process.on('SIGTSTP', () => {
 `)
 })
 
-linkscanner.run([...source, ...argv._])
+linkscanner.run([...source, ...argv._.map(String)])
   .then(
     () => {
       logger.debug('exit')

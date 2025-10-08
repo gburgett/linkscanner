@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     // Target latest version of ECMAScript.
-    "target": "es2015",
+    "target": "es2018",
     "module": "commonjs",
     // Search under node_modules for non-relative imports.
     "moduleResolution": "node",
@@ -16,7 +16,7 @@
     "strictNullChecks": true,
     "sourceMap": true,
     "lib": [
-      "es2015"
+      "es2018"
     ],
     "typeRoots": [
       "./@types"

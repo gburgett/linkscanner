@@ -1,5 +1,5 @@
 
-import { } from 'async-toolbox/stream'
+import { endAsync } from 'async-toolbox/stream'
 import { Logger } from '../logger'
 import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
@@ -29,7 +29,7 @@ describe('Json formatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(JSON.parse(messages[0])).toEqual({
@@ -91,7 +91,7 @@ describe('Json formatter', () => {
     instance.write(top)
     redirects.forEach((r) => instance.write(r))
     instance.write(final)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     // tslint:disable-next-line: max-line-length
@@ -140,7 +140,7 @@ describe('Json formatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(messages.length).toEqual(0)
@@ -166,7 +166,7 @@ describe('Json formatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(JSON.parse(messages[0])).toEqual({
@@ -213,7 +213,7 @@ describe('Json formatter', () => {
 
     // act
     redirects.forEach((r) => instance.write(r))
-    await instance.endAsync()
+    await endAsync(instance)
 
 
     expect(JSON.parse(messages[1])).toEqual({

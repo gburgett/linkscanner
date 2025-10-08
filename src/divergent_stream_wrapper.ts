@@ -1,6 +1,6 @@
 import { ReadLock, Semaphore } from 'async-toolbox'
 import {onceAsync} from 'async-toolbox/events'
-import { ParallelTransform, ParallelTransformOptions } from 'async-toolbox/stream'
+import { ParallelTransform, ParallelTransformOptions, writeAsync, endAsync } from 'async-toolbox/stream'
 import { Duplex } from 'stream'
 
 import { EventForwarder, StreamEvents } from './event_forwarder'
@@ -71,13 +71,13 @@ export class DivergentStreamWrapper extends ParallelTransform {
     }
 
     const stream = await this._streamFor(chunk)
-    await stream.writeAsync(chunk)
+    await writeAsync(stream, chunk)
   }
 
   public async _flushAsync() {
     const promises = [] as Array<Promise<any>>
     this._streams.forEach((stream) => {
-      promises.push(stream.endAsync())
+      promises.push(endAsync(stream))
       promises.push(onceAsync(stream, 'end'))
     })
     await Promise.all(promises)

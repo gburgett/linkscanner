@@ -184,7 +184,7 @@ class Linkscanner extends Transform {
     await onceAsync(this, 'end')
   }
 
-  public _transform(chunk: any, encoding: string, cb: TransformCallback): void {
+  public _transform(chunk: any, encoding: BufferEncoding, cb: TransformCallback): void {
     this._source.write(chunk, encoding, cb)
   }
 
@@ -344,10 +344,12 @@ class Builder {
   public get(): Linkscanner {
     const linkscanner = new Linkscanner(this._options)
     this._formatters.forEach(([name, f]) => {
-      return linkscanner.pipe(f({
+      const formatter = f({
         ...this._options,
         formatter: name,
-      }))
+      })
+      // Type assertion needed due to async-toolbox Writable incompatibility with Node.js stream types
+      linkscanner.pipe(formatter as unknown as NodeJS.WritableStream)
     })
     if (this._progress) {
       linkscanner.pipe(this._progress)

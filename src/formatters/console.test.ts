@@ -1,4 +1,4 @@
-import {} from 'async-toolbox/events'
+import { onceAsync } from 'async-toolbox/events'
 
 import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
@@ -38,7 +38,7 @@ describe('ConsoleFormatter', () => {
     instance.write(skippedResult)
     instance.end()
 
-    await instance.onceAsync('finish')
+    await onceAsync(instance, 'finish')
 
     expect(messages.length).toEqual(1)
     expect(messages[0]).toContain('200')
@@ -95,7 +95,7 @@ describe('ConsoleFormatter', () => {
     instance.write(errorResult)
     instance.end()
 
-    await instance.onceAsync('finish')
+    await onceAsync(instance, 'finish')
 
     expect(messages.length).toEqual(5)
     expect(messages[2]).toContain('The following URLs are broken')
@@ -142,7 +142,7 @@ describe('ConsoleFormatter', () => {
     } as SuccessResult)
     instance.end()
 
-    await instance.onceAsync('finish')
+    await onceAsync(instance, 'finish')
 
     expect(messages.length).toEqual(3)
     expect(messages[0]).toContain('200')
@@ -203,7 +203,7 @@ describe('ConsoleFormatter', () => {
     instance.write(child2)
     instance.end()
 
-    await instance.onceAsync('finish')
+    await onceAsync(instance, 'finish')
 
     expect(messages.length).toEqual(4)
     expect(messages[1]).toContain('201')

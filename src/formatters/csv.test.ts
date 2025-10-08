@@ -1,5 +1,5 @@
 
-import { } from 'async-toolbox/stream'
+import { endAsync } from 'async-toolbox/stream'
 import { Logger } from '../logger'
 import { ErrorResult, Result, SuccessResult } from '../model'
 import { parseUrl } from '../url'
@@ -29,7 +29,7 @@ describe('CsvFormatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(messages.length).toEqual(2)
@@ -83,7 +83,7 @@ describe('CsvFormatter', () => {
     instance.write(top)
     redirects.forEach((r) => instance.write(r))
     instance.write(final)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(messages.length).toEqual(3)

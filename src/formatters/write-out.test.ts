@@ -1,5 +1,5 @@
 
-import { } from 'async-toolbox/stream'
+import { endAsync } from 'async-toolbox/stream'
 import { Logger } from '../logger'
 import { ErrorResult, Result, SkippedResult, SuccessResult } from '../model'
 import { parseUrl } from '../url'
@@ -30,7 +30,7 @@ describe('WriteOut formatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(messages[0]).toEqual('test 200\t123\ttext/html')
@@ -81,7 +81,7 @@ describe('WriteOut formatter', () => {
     instance.write(top)
     redirects.forEach((r) => instance.write(r))
     instance.write(final)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     // tslint:disable-next-line: max-line-length
@@ -108,7 +108,7 @@ describe('WriteOut formatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(messages.length).toEqual(0)
@@ -135,7 +135,7 @@ describe('WriteOut formatter', () => {
 
     // act
     instance.write(result)
-    await instance.endAsync()
+    await endAsync(instance)
 
     // assert
     expect(messages[0]).toEqual('\terror\tTest Error!')
@@ -171,7 +171,7 @@ describe('WriteOut formatter', () => {
     // act
     instance.write(page)
     redirects.forEach((r) => instance.write(r))
-    await instance.endAsync()
+    await endAsync(instance)
 
     expect(messages[0]).toEqual(`200 http://test.com/some-page ==> 200 http://test.com/some-page (0 123ms)`)
     expect(messages[1]).toEqual(`301 http://test.com/r1 ==> 200 http://test.com/some-page (1 124ms)`)

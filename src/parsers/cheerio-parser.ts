@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio'
-import {AnyNode, Element as CheerioElement} from 'cheerio'
+import { AnyNode, Element as CheerioElement } from 'domhandler'
 import { Request, Response } from 'cross-fetch'
 
 import { ParserOptions } from '.'

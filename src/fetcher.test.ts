@@ -1,5 +1,5 @@
 import { wait } from 'async-toolbox'
-import { collect } from 'async-toolbox/stream'
+import { collect, endAsync, writeAsync } from 'async-toolbox/stream'
 
 import fetchMock from 'fetch-mock'
 
@@ -37,8 +37,8 @@ describe('Fetcher', () => {
     })
 
     // act
-    await uut.writeAsync({ url: parseUrl('https://github.com/gburgett/linkscanner') })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('https://github.com/gburgett/linkscanner') })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as ErrorResult).error).toBeFalsy()
@@ -54,8 +54,8 @@ describe('Fetcher', () => {
     fetchMockSandbox.headOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com'), leaf: true })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as SuccessResult).status).toEqual(200)
@@ -71,8 +71,8 @@ describe('Fetcher', () => {
     fetchMockSandbox.getOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com'), leaf: true })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as SuccessResult).status).toEqual(200)
@@ -89,8 +89,8 @@ describe('Fetcher', () => {
     fetchMockSandbox.getOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com'), leaf: true })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect(result[0].type).toEqual('success')
@@ -119,8 +119,8 @@ describe('Fetcher', () => {
     uut.on('url', (url) => emitted.push(url))
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com'), leaf: true })
+    await endAsync(uut)
     await collect(uut)
 
     expect(emitted.length).toEqual(0)
@@ -141,8 +141,8 @@ describe('Fetcher', () => {
     fetchMockSandbox.headOnce('http://www.other.com/', 200)
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com'), leaf: true })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com'), leaf: true })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as ErrorResult).error).toBeFalsy()
@@ -163,8 +163,8 @@ describe('Fetcher', () => {
     fetchMockSandbox.getOnce('http://other.com', () => { throw new Error(`test error!`) })
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com') })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com') })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     const r0 = result[0] as ErrorResult
@@ -187,8 +187,8 @@ describe('Fetcher', () => {
     })
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com') })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com') })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     const r0 = result[0] as ErrorResult
@@ -218,8 +218,8 @@ describe('Fetcher', () => {
     })
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com/1'), leaf: true })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com/1'), leaf: true })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as ErrorResult).error).toBeFalsy()
@@ -252,8 +252,8 @@ describe('Fetcher', () => {
     fetchMockSandbox.getOnce('http://other.com/some-video', resp)
 
     // act
-    await uut.writeAsync({ url: parseUrl('http://other.com/some-video') })
-    await uut.endAsync()
+    await writeAsync(uut,{ url: parseUrl('http://other.com/some-video') })
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect(result[0].type).toEqual('success')
@@ -273,7 +273,7 @@ describe('Fetcher', () => {
     fetchMockSandbox.getOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync({
+    await writeAsync(uut,{
       url: parseUrl('http://other.com'),
       parent: {
         url: parseUrl('http://parent-url.com'),
@@ -281,7 +281,7 @@ describe('Fetcher', () => {
         method: 'GET',
       },
     } as Chunk)
-    await uut.endAsync()
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as SuccessResult).status).toEqual(200)
@@ -298,7 +298,7 @@ describe('Fetcher', () => {
     fetchMockSandbox.getOnce('http://other.com', 200)
 
     // act
-    await uut.writeAsync({
+    await writeAsync(uut,{
       url: parseUrl('http://other.com'),
       parent: {
         url: parseUrl('https://parent-https-url.com'),
@@ -306,7 +306,7 @@ describe('Fetcher', () => {
         method: 'GET',
       },
     } as Chunk)
-    await uut.endAsync()
+    await endAsync(uut)
     const result: Result[] = await collect(uut)
 
     expect((result[0] as SuccessResult).status).toEqual(200)
