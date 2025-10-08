@@ -1,4 +1,5 @@
-import cheerio, {AnyNode, Element as CheerioElement} from 'cheerio'
+import * as cheerio from 'cheerio'
+import {AnyNode, Element as CheerioElement} from 'cheerio'
 import { Request, Response } from 'cross-fetch'
 
 import { ParserOptions } from '.'

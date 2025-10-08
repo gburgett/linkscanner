@@ -1,4 +1,4 @@
-#! /usr/bin/env node --preserve-symlinks
+#! /usr/bin/env -S node --preserve-symlinks
 // note: --preserve-symlinks option above is necessary for babel to resolve symlinked
 // files in the current directory.  Otherwise babel sees them as outside the current
 // directory and fails to transform them.
