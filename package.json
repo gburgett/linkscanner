@@ -1,6 +1,6 @@
 {
   "name": "linkscanner",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "A CLI and node library to scan a source URL and recursively check URLs",
   "repository": {
     "type": "git",
